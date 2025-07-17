@@ -1,0 +1,24 @@
+.full-screen-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  flex-direction: column;
+}
+
+/* Nasconde la X automatica della modale Dialog/Modal (Shadcn, Radix, ecc) solo nella modale fullscreen */
+.full-screen-modal [data-dialog-close],
+.full-screen-modal .dialog-close,
+.full-screen-modal .DialogClose,
+.full-screen-modal button[aria-label="Close"],
+.full-screen-modal button[aria-label="Chiudi"]:not([type="button"]) {
+  display: none !important;
+}
