@@ -29,7 +29,7 @@ serve(async (req) => {
       return new Response("Importo minimo 0.50€", { status: 400, headers: corsHeaders });
     }
     // Chiamata REST API Stripe
-    const stripeSecret = "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";
+    const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY");
     const debugLogs = [];
     debugLogs.push({ step: "stripeSecret", value: stripeSecret });
     const body = {
