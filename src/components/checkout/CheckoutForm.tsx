@@ -30,8 +30,8 @@ export default function CheckoutForm() {
     console.log("[CheckoutForm] Email:", email);
     console.log("[CheckoutForm] Products:", products);
     // Recupero il token JWT dell'utente autenticato
-    const session = supabase.auth.getSession ? await supabase.auth.getSession() : null;
-    const token = session?.data?.session?.access_token || session?.access_token || "";
+    const { data } = await supabase.auth.getSession();
+    const token = data.session ? data.session.access_token : "";
     console.log("[CheckoutForm] JWT token:", token);
     if (!stripe || !elements) {
       setError("Stripe non è pronto.");
