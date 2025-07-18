@@ -29,7 +29,9 @@ serve(async (req) => {
       return new Response("Importo minimo 0.50€", { status: 400, headers: corsHeaders });
     }
     // Chiamata REST API Stripe
-    const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY");
+    const stripeSecret = "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";
+    const debugLogs = [];
+    debugLogs.push({ step: "stripeSecret", value: stripeSecret });
     const body = {
       amount,
       currency: "eur",
@@ -44,6 +46,7 @@ serve(async (req) => {
         email,
       },
     };
+    debugLogs.push({ step: "stripeBody", value: body });
     const stripeRes = await fetch("https://api.stripe.com/v1/payment_intents", {
       method: "POST",
       headers: {
@@ -58,12 +61,15 @@ serve(async (req) => {
         "metadata[email]": email,
       }),
     });
+    debugLogs.push({ step: "stripeResponseStatus", value: stripeRes.status });
     if (!stripeRes.ok) {
       const err = await stripeRes.text();
-      return new Response(JSON.stringify({ error: err }), { status: 500, headers: corsHeaders });
+      debugLogs.push({ step: "stripeError", value: err });
+      return new Response(JSON.stringify({ error: err, debug: debugLogs }), { status: 500, headers: corsHeaders });
     }
     const paymentIntent = await stripeRes.json();
-    return new Response(JSON.stringify({ clientSecret: paymentIntent.client_secret }), {
+    debugLogs.push({ step: "stripePaymentIntent", value: paymentIntent });
+    return new Response(JSON.stringify({ clientSecret: paymentIntent.client_secret, debug: debugLogs }), {
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (err) {

@@ -3,6 +3,7 @@ import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function CheckoutForm() {
   const stripe = useStripe();
@@ -24,46 +25,69 @@ export default function CheckoutForm() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    console.log("[CheckoutForm] Stripe ready:", !!stripe);
+    console.log("[CheckoutForm] Elements ready:", !!elements);
+    console.log("[CheckoutForm] Email:", email);
+    console.log("[CheckoutForm] Products:", products);
+    // Recupero il token JWT dell'utente autenticato
+    const session = supabase.auth.getSession ? await supabase.auth.getSession() : null;
+    const token = session?.data?.session?.access_token || session?.access_token || "";
+    console.log("[CheckoutForm] JWT token:", token);
     if (!stripe || !elements) {
       setError("Stripe non è pronto.");
       setLoading(false);
+      console.log("[CheckoutForm] Stripe non pronto");
       return;
     }
     if (!email) {
       setError("Inserisci la tua email.");
       setLoading(false);
+      console.log("[CheckoutForm] Email mancante");
       return;
     }
     if (products.length === 0) {
       setError("Il carrello è vuoto.");
       setLoading(false);
+      console.log("[CheckoutForm] Carrello vuoto");
       return;
     }
     try {
+      console.log("[CheckoutForm] Invio richiesta a Supabase...");
       const res = await fetch("https://bqrqujqlaizirskgvyst.functions.supabase.co/create-payment-intent", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ email, products }),
       });
+      console.log("[CheckoutForm] Risposta Supabase status:", res.status);
       const data = await res.json();
+      console.log("[CheckoutForm] Risposta Supabase body:", data);
       if (!data.clientSecret) {
         setError("Errore nella creazione del pagamento.");
         setLoading(false);
+        console.log("[CheckoutForm] clientSecret mancante");
         return;
       }
+      console.log("[CheckoutForm] Invio conferma pagamento a Stripe...");
       const result = await stripe.confirmCardPayment(data.clientSecret, {
         payment_method: {
           card: elements.getElement(CardElement)!,
           billing_details: { email },
         },
       });
+      console.log("[CheckoutForm] Risposta Stripe:", result);
       if (result.error) {
         setError(result.error.message || "Errore nel pagamento.");
+        console.log("[CheckoutForm] Errore Stripe:", result.error);
       } else if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
+        console.log("[CheckoutForm] Pagamento riuscito:", result.paymentIntent);
         navigate("/order-confirmation");
       }
     } catch (err: any) {
       setError(err.message || "Errore di rete.");
+      console.log("[CheckoutForm] Errore catch:", err);
     }
     setLoading(false);
   };
