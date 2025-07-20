@@ -129,29 +129,19 @@ export function CommunicationCenter() {
 
   const handleSendMessage = async () => {
     try {
-      if (newMessage.toAll) {
-        for (const user of users) {
-          await sendMessage({
-            recipient_id: user.id,
-            subject: newMessage.subject,
-            content: newMessage.content,
-            message_type: 'system', // non chat!
-            type: newMessage.type
-          });
-        }
-      } else if (newMessage.recipient_ids.length > 0) {
-        for (const id of newMessage.recipient_ids) {
-          await sendMessage({
-            recipient_id: id,
-            subject: newMessage.subject,
-            content: newMessage.content,
-            message_type: 'system',
-            type: newMessage.type
-          });
-        }
-      } else {
-        return;
-      }
+      const destinatari = newMessage.toAll
+        ? users.map(u => u.id)
+        : newMessage.recipient_ids;
+      if (destinatari.length === 0) return;
+
+      await addNotification({
+        userIds: destinatari,
+        title: newMessage.subject,
+        message: newMessage.content,
+        type: newMessage.type,
+        link: undefined
+      });
+
       setNewMessage({
         subject: '',
         content: '',
@@ -161,7 +151,7 @@ export function CommunicationCenter() {
       });
       setIsDialogOpen(false);
     } catch (error) {
-      console.error('Errore invio messaggio:', error);
+      console.error('Errore invio notifica:', error);
     }
   };
 

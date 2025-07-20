@@ -1,17 +1,19 @@
 
-import { useState, useEffect, useCallback } from 'react';
+
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export type Notification = {
-  id: string;
+  id: string; // id user_notifications
+  notification_id: string;
   user_id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'warning' | 'error' | 'success' | 'chat' | string; // supporta custom
-  link?: string | null;
   is_read: boolean;
   created_at: string;
+  title: string;
+  message: string;
+  type: string;
+  link?: string | null;
 };
 
 export function useNotifications() {
@@ -19,12 +21,14 @@ export function useNotifications() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Carica tutte le notifiche dell'utente loggato
-  const fetchNotifications = useCallback(async () => {
+  // Carica tutte le notifiche dell'utente loggato (join user_notifications + notifications)
+  const fetchNotifications = useCallback(async (userId?: string) => {
+    if (!userId) return;
     setLoading(true);
-    const { data, error } = await (supabase as any)
-      .from('notifications')
-      .select('*')
+    const { data, error } = await supabase
+      .from('user_notifications')
+      .select('id, notification_id, user_id, is_read, created_at, notifications(title, message, type, link)')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) {
       toast({
@@ -34,58 +38,74 @@ export function useNotifications() {
       });
       setNotifications([]);
     } else {
-      setNotifications(data || []);
+      setNotifications((data || []).map((row: any) => ({
+        id: row.id,
+        notification_id: row.notification_id,
+        user_id: row.user_id,
+        is_read: row.is_read,
+        created_at: row.created_at,
+        title: row.notifications?.title,
+        message: row.notifications?.message,
+        type: row.notifications?.type,
+        link: row.notifications?.link,
+      })));
     }
     setLoading(false);
   }, [toast]);
 
   // Segna una notifica come letta
-  const markAsRead = useCallback(async (notificationId: string) => {
-    const { error } = await (supabase as any)
-      .from('notifications')
+  const markAsRead = useCallback(async (userNotificationId: string) => {
+    const { error } = await supabase
+      .from('user_notifications')
       .update({ is_read: true })
-      .eq('id', notificationId);
+      .eq('id', userNotificationId);
     if (!error) {
-      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n));
+      setNotifications(prev => prev.map(n => n.id === userNotificationId ? { ...n, is_read: true } : n));
     }
   }, []);
 
-  // API semplice per aggiungere una notifica
+  // API per aggiungere una notifica multipla
   const addNotification = useCallback(async (params: {
-    userId: string;
+    userIds: string[];
     title: string;
     message: string;
-    type: 'info' | 'warning' | 'error' | 'success' | 'chat' | string;
+    type: string;
     link?: string;
   }) => {
-    const { userId, title, message, type, link } = params;
-    const { error } = await (supabase as any)
+    const { userIds, title, message, type, link } = params;
+    // 1. Crea la notifica generica
+    const { data: notifData, error: notifError } = await supabase
       .from('notifications')
       .insert([
-        {
-          user_id: userId,
-          title,
-          message,
-          type,
-          link: link || null,
-        },
-      ]);
-    if (error) {
+        { title, message, type, link: link || null }
+      ])
+      .select();
+    if (notifError || !notifData || !notifData[0]) {
       toast({
         title: 'Errore',
         description: 'Impossibile creare la notifica',
         variant: 'destructive',
       });
-    } else {
-      fetchNotifications();
+      return;
     }
-  }, [toast, fetchNotifications]);
-
-  useEffect(() => {
-    fetchNotifications();
-    // opzionale: polling o realtime
-    // eslint-disable-next-line
-  }, []);
+    const notification_id = notifData[0].id;
+    // 2. Crea una riga user_notifications per ogni destinatario
+    const inserts = userIds.map(uid => ({
+      notification_id,
+      user_id: uid,
+      is_read: false
+    }));
+    const { error: userNotifError } = await supabase
+      .from('user_notifications')
+      .insert(inserts);
+    if (userNotifError) {
+      toast({
+        title: 'Errore',
+        description: 'Impossibile associare la notifica agli utenti',
+        variant: 'destructive',
+      });
+    }
+  }, [toast]);
 
   return {
     notifications,

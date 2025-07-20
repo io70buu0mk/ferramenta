@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import UserAdminGroupChat from '@/components/user/UserAdminGroupChat';
 import { Button } from "@/components/ui/button";
-import { User, LogOut, Home, Mail, Phone, AtSign } from "lucide-react";
+import { User, LogOut, Home, Mail, Phone, AtSign, Bell } from "lucide-react";
+import Notifications from '../components/user/Notifications';
 import { useUserRole } from "@/hooks/useUserRole";
 import EmailConfirmationAlert from "@/components/auth/EmailConfirmationAlert";
 
@@ -21,9 +22,27 @@ type UserProfile = {
 };
 
 export default function ClienteAreaNew() {
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificheCount, setNotificheCount] = useState(0);
+  // Polling per badge notifiche non lette (nuova tabella user_notifications)
+  useEffect(() => {
+    if (!user) return;
+    let interval: NodeJS.Timeout;
+    const fetchCount = async () => {
+      const { data, error } = await supabase
+        .from("user_notifications")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("is_read", false);
+      if (!error && data) setNotificheCount(data.length);
+    };
+    fetchCount();
+    interval = setInterval(fetchCount, 1000);
+    return () => clearInterval(interval);
+  }, [User]);
+  const [user, setUser] = useState<any>(null);
   const { userId } = useParams();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [user, setUser] = useState<any>(null);
   const [hasAdminChat, setHasAdminChat] = useState(false);
   const [loading, setLoading] = useState(true);
   const { role, isAdmin } = useUserRole(user);
@@ -168,7 +187,18 @@ export default function ClienteAreaNew() {
             </div>
           </div>
           
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            <button
+              className="relative flex items-center justify-center w-10 h-10 bg-white border border-[#b43434] rounded-full hover:bg-[#f8e8e3] transition"
+              aria-label="Notifiche"
+              title="Notifiche"
+              onClick={() => setShowNotifications(true)}
+            >
+              <Bell size={22} className="text-[#b43434]" />
+              {notificheCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1">{notificheCount}</span>
+              )}
+            </button>
             <Button 
               variant="outline" 
               onClick={() => window.location.replace("/")}
@@ -186,6 +216,10 @@ export default function ClienteAreaNew() {
               Logout
             </Button>
           </div>
+        {/* Modal notifiche */}
+        {showNotifications && user && (
+          <Notifications userId={user.id} onClose={() => setShowNotifications(false)} />
+        )}
         </div>
 
         {/* Email Confirmation Alert */}

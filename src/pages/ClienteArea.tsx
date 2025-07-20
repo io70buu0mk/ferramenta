@@ -1,16 +1,36 @@
 import { useEffect, useState } from "react";
 import CartSection from '../components/user/CartSection';
 import { supabase } from "@/integrations/supabase/client";
-import { useNotifications } from '@/hooks/useNotifications';
 import { useNavigate } from 'react-router-dom';
+import Notifications from '../components/user/Notifications';
+import { FiBell } from 'react-icons/fi';
+
 
 type UserProfile = { id: string, email: string, nome: string, cognome: string, nome_utente: string, numero_telefono: string | null };
 
 export default function ClienteArea() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const { notifications, markAsRead } = useNotifications();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificheCount, setNotificheCount] = useState(0);
   const navigate = useNavigate();
+
+  // Polling per badge notifiche non lette
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    const fetchCount = async () => {
+      if (!profile) return;
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("id, is_read")
+        .eq("user_id", profile.id)
+        .eq("is_read", false);
+      if (!error && data) setNotificheCount(data.length);
+    };
+    fetchCount();
+    interval = setInterval(fetchCount, 1000);
+    return () => clearInterval(interval);
+  }, [profile]);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -56,7 +76,28 @@ export default function ClienteArea() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#f5f5f7] px-2">
       <div className="bg-white rounded-lg shadow max-w-xl w-full p-8">
-        <div className="mb-2 text-sm text-gray-500">Area Cliente</div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-sm text-gray-500">Area Cliente</div>
+          <div className="flex items-center gap-4">
+            <a href="/" className="text-[#b43434] underline">Home</a>
+            <button
+              className="relative flex items-center justify-center w-10 h-10 bg-white border border-[#b43434] rounded-full hover:bg-[#f8e8e3] transition"
+              aria-label="Notifiche"
+              title="Notifiche"
+              onClick={() => setShowNotifications(true)}
+            >
+              <FiBell size={24} className="text-[#b43434]" />
+              {notificheCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1">{notificheCount}</span>
+              )}
+            </button>
+            <button
+              className="bg-white text-[#b43434] border border-[#b43434] px-4 py-2 rounded hover:bg-[#f8e8e3] transition"
+              onClick={async () => { await supabase.auth.signOut(); window.location.replace("/"); }}>
+              Logout
+            </button>
+          </div>
+        </div>
         <div className="mb-4 text-xl font-bold text-[#b43434]">{profile.email}</div>
         <div className="grid gap-3 mb-6">
           <div className="bg-gray-50 p-3 rounded flex-col items-start">
@@ -72,41 +113,10 @@ export default function ClienteArea() {
             <span className="text-gray-400">[nessun ordine]</span>
           </div>
         </div>
-        {/* Notifiche utente: ban unico per chat e sistema */}
-        <div className="mb-6">
-          <div className="font-bold text-lg mb-2 text-[#b43434]">Notifiche</div>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {notifications.length === 0 && (
-              <div className="text-neutral-400 text-sm">Nessuna notifica</div>
-            )}
-            {notifications.map(n => (
-              <div
-                key={n.id}
-                className={`p-3 border rounded-lg cursor-pointer hover:bg-neutral-50 transition-colors flex flex-col ${!n.is_read ? 'border-[#b43434] bg-red-50' : 'border-neutral-200'}`}
-                onClick={() => {
-                  markAsRead(n.id);
-                  if (n.link) navigate(n.link);
-                }}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-xs px-2 py-0.5 rounded ${n.type === 'chat' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{n.type === 'chat' ? 'Chat' : 'Sistema'}</span>
-                  <span className="font-semibold text-sm">{n.title}</span>
-                  {!n.is_read && <span className="ml-2 w-2 h-2 bg-[#b43434] rounded-full"></span>}
-                </div>
-                <div className="text-xs text-neutral-700 mb-1">{n.message}</div>
-                <div className="text-xs text-neutral-400">{new Date(n.created_at).toLocaleString('it-IT')}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="mt-6 flex justify-between">
-          <a href="/" className="text-[#b43434] underline">Home</a>
-          <button
-            className="bg-white text-[#b43434] border border-[#b43434] px-4 py-2 rounded hover:bg-[#f8e8e3] transition"
-            onClick={async () => { await supabase.auth.signOut(); window.location.replace("/"); }}>
-            Logout
-          </button>
-        </div>
+        {/* Modal notifiche */}
+        {showNotifications && (
+          <Notifications userId={profile.id} onClose={() => setShowNotifications(false)} />
+        )}
       </div>
     </div>
   );
