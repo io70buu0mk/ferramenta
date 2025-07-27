@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import UserAdminGroupChat from '@/components/user/UserAdminGroupChat';
 import { Button } from "@/components/ui/button";
-import { User, LogOut, Home, Mail, Phone, AtSign, Bell } from "lucide-react";
+import { User, LogOut, Home, Mail, Phone, AtSign, Bell, Settings, CheckCircle, XCircle } from "lucide-react";
 import Notifications from '../components/user/Notifications';
 import { useUserRole } from "@/hooks/useUserRole";
 import EmailConfirmationAlert from "@/components/auth/EmailConfirmationAlert";
@@ -24,6 +23,21 @@ type UserProfile = {
 export default function ClienteAreaNew() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notificheCount, setNotificheCount] = useState(0);
+  const [user, setUser] = useState<any>(null);
+  const { userId } = useParams();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { role, isAdmin } = useUserRole(user);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileData, setProfileData] = useState({ nome: "", cognome: "", nome_utente: "", numero_telefono: "" });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  useEffect(() => {
+    checkAuth();
+    // eslint-disable-next-line
+  }, [userId]);
+
   // Polling per badge notifiche non lette (nuova tabella user_notifications)
   useEffect(() => {
     if (!user) return;
@@ -39,37 +53,8 @@ export default function ClienteAreaNew() {
     fetchCount();
     interval = setInterval(fetchCount, 1000);
     return () => clearInterval(interval);
-  }, [User]);
-  const [user, setUser] = useState<any>(null);
-  const { userId } = useParams();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [hasAdminChat, setHasAdminChat] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const { role, isAdmin } = useUserRole(user);
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [profileData, setProfileData] = useState({ nome: "", cognome: "", nome_utente: "", numero_telefono: "" });
-  const [savingProfile, setSavingProfile] = useState(false);
-
-  useEffect(() => {
-    checkAuth();
-    // eslint-disable-next-line
-  }, [userId]);
-
-  // Controlla se esiste una conversazione user-admin per abilitare la chat
-  useEffect(() => {
-    const checkAdminChat = async () => {
-      if (!user) return;
-      // Usa il client JS non tipizzato per accedere a tabelle custom
-      const { data: conv } = await (supabase as any)
-        .from('conversations')
-        .select('id')
-        .eq('type', 'user-admin')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      setHasAdminChat(!!conv);
-    };
-    checkAdminChat();
   }, [user]);
+
 
   const checkAuth = async () => {
     try {
@@ -80,20 +65,8 @@ export default function ClienteAreaNew() {
         return;
       }
 
+      // Valorizza user per abilitare la campanella notifiche
       setUser(session.user);
-
-      // Verifica che l'userId nell'URL corrisponda all'utente loggato
-      if (userId && userId !== session.user.id) {
-        console.error("Accesso negato: userId non corrispondente");
-        window.location.replace(`/cliente/${session.user.id}`);
-        return;
-      }
-
-      // Se non c'è userId nell'URL, reindirizza con l'ID corretto
-      if (!userId) {
-        window.location.replace(`/cliente/${session.user.id}`);
-        return;
-      }
 
       // Carica il profilo utente
       const { data: userProfile, error } = await supabase
@@ -188,11 +161,71 @@ export default function ClienteAreaNew() {
           </div>
           
           <div className="flex gap-3 items-center">
+            {/* Pulsante impostazioni */}
             <button
-              className="relative flex items-center justify-center w-10 h-10 bg-white border border-[#b43434] rounded-full hover:bg-[#f8e8e3] transition"
+              className="relative flex items-center justify-center w-10 h-10 bg-white border border-[#b43434] rounded-full hover:bg-[#f8e8e3] transition disabled:opacity-50"
+              aria-label="Impostazioni"
+              title="Impostazioni"
+              disabled={!user}
+              onClick={() => setShowSettings(true)}
+            >
+              <Settings size={22} className="text-[#b43434]" />
+            </button>
+        {/* Modale impostazioni */}
+        <Dialog open={showSettings} onOpenChange={setShowSettings}>
+          <DialogContent className="max-w-2xl w-full bg-white/95 rounded-2xl shadow-2xl p-8 border-0">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-antracite mb-2">Modifica dati personali</DialogTitle>
+            </DialogHeader>
+            <form
+              className="flex flex-col gap-5 mt-4"
+              onSubmit={async e => {
+                e.preventDefault();
+                setSavingProfile(true);
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) return;
+                await supabase.from("user_profiles").update({
+                  nome: profileData.nome || profile?.nome,
+                  cognome: profileData.cognome || profile?.cognome,
+                  nome_utente: profileData.nome_utente || profile?.nome_utente,
+                  numero_telefono: profileData.numero_telefono || profile?.numero_telefono,
+                }).eq('id', session.user.id);
+                setSavingProfile(false);
+                setShowSettings(false);
+                window.location.reload();
+              }}
+            >
+              <div className="flex flex-col md:flex-row gap-5">
+                <Input placeholder="Nome" value={profileData.nome || profile?.nome || ''} onChange={e => setProfileData(p => ({ ...p, nome: e.target.value }))} className="flex-1 text-base px-4 py-3" />
+                <Input placeholder="Cognome" value={profileData.cognome || profile?.cognome || ''} onChange={e => setProfileData(p => ({ ...p, cognome: e.target.value }))} className="flex-1 text-base px-4 py-3" />
+              </div>
+              <div className="flex flex-col md:flex-row gap-5">
+                <Input placeholder="Nome utente" value={profileData.nome_utente || profile?.nome_utente || ''} onChange={e => setProfileData(p => ({ ...p, nome_utente: e.target.value }))} className="flex-1 text-base px-4 py-3" />
+                <Input placeholder="Telefono" value={profileData.numero_telefono || profile?.numero_telefono || ''} onChange={e => setProfileData(p => ({ ...p, numero_telefono: e.target.value }))} className="flex-1 text-base px-4 py-3" />
+              </div>
+              <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3">
+                <Input placeholder="Email" value={profile?.email || ''} disabled className="flex-1 bg-transparent border-none text-base" />
+                {user?.email_confirmed_at ? (
+                  <span className="flex items-center text-green-600 text-xs gap-1"><CheckCircle size={16}/> Confermata</span>
+                ) : (
+                  <span className="flex items-center text-red-500 text-xs gap-1"><XCircle size={16}/> Non confermata</span>
+                )}
+              </div>
+              <Button type="submit" className="w-full text-base py-3 mt-2" disabled={savingProfile}>
+                {savingProfile ? "Salvataggio..." : "Salva modifiche"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+            <button
+              className="relative flex items-center justify-center w-10 h-10 bg-white border border-[#b43434] rounded-full hover:bg-[#f8e8e3] transition disabled:opacity-50"
               aria-label="Notifiche"
               title="Notifiche"
-              onClick={() => setShowNotifications(true)}
+              disabled={!user}
+              onClick={() => {
+                console.log('[DEBUG] Click campanella, user:', user);
+                setShowNotifications(true);
+              }}
             >
               <Bell size={22} className="text-[#b43434]" />
               {notificheCount > 0 && (
@@ -217,8 +250,17 @@ export default function ClienteAreaNew() {
             </Button>
           </div>
         {/* Modal notifiche */}
-        {showNotifications && user && (
-          <Notifications userId={user.id} onClose={() => setShowNotifications(false)} />
+        {showNotifications && (
+          !user ? (
+            <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-40 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-lg p-8">Caricamento utente...</div>
+            </div>
+          ) : (
+            <>
+              {console.log('[DEBUG] Montata finestra Notifications, userId:', user.id)}
+              <Notifications userId={user.id} onClose={() => setShowNotifications(false)} />
+            </>
+          )
         )}
         </div>
 
@@ -308,11 +350,7 @@ export default function ClienteAreaNew() {
               <CardDescription>Comunicazioni dirette con lo staff</CardDescription>
             </CardHeader>
             <CardContent>
-              {hasAdminChat && user ? (
-                <UserAdminGroupChat user={user} />
-              ) : (
-                <div className="text-neutral-400 text-center py-8">Nessuna conversazione attiva con l'amministrazione.<br/>Riceverai qui i messaggi quando uno staff ti contatterà.</div>
-              )}
+              {/* Sezione chat rimossa */}
             </CardContent>
           </Card>
         </div>

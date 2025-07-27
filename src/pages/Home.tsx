@@ -57,7 +57,7 @@ export default function Home() {
     });
 
     return () => subscription.unsubscribe();
-  }, [user]);
+  }, []);
 
   const handleLogout = async () => {
     console.log('📤 Logout utente');

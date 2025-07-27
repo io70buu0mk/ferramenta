@@ -1,9 +1,11 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { countries } from "@/utils/countries";
+import { CountryPhoneInput } from "@/components/admin/CountryPhoneInput";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { 
@@ -72,15 +74,47 @@ export default function AdminDashboard() {
   const [user, setUser] = useState<any>(null);
   const { role, isAdmin } = useUserRole(user);
   const { products, loading: productsLoading, deleteProduct } = useProducts();
-  const { messages, loading: messagesLoading, markAsRead } = useMessages();
+  const { messages, loading: messagesLoading } = useMessages();
   const { stats, loading: statsLoading } = useAdminStats();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [productFormOpen, setProductFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
+  // DEBUG: logga lo stato di caricamento, profilo e ruolo
+  console.log('DEBUG AdminDashboard:', { loading, profile, user, isAdmin: isAdmin() });
+
+  // Stato e logica per configurazione telefono notifiche e invio SMS di prova
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [phoneSaved, setPhoneSaved] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [testMessage, setTestMessage] = useState("");
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+  // Stato per il selettore paese/telefono
+  const [country, setCountry] = useState(countries.find(c => c.code === "IT")!);
+  const [phoneRaw, setPhoneRaw] = useState("");
+
+
+  // Gestione auth: chiama checkAuth solo su mount e su cambio userId, e aggiungi listener per cambiamenti auth
   useEffect(() => {
+    let ignore = false;
     checkAuth();
-  }, [userId]);
+    // Listener per cambiamenti di autenticazione
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!ignore) {
+        if (!session) {
+          navigate("/auth");
+        } else {
+          checkAuth();
+        }
+      }
+    });
+    return () => {
+      ignore = true;
+      subscription.subscription.unsubscribe();
+    };
+  }, [userId, navigate]);
 
   const checkAuth = async () => {
     try {
@@ -132,6 +166,25 @@ export default function AdminDashboard() {
     navigate("/");
   };
 
+  useEffect(() => {
+    const fetchPhone = async () => {
+      const { data } = await supabase
+        .from('configurazione_generale')
+        .select('valore')
+        .eq('chiave', 'numero_telefono_notifiche')
+        .single();
+      if (data && data.valore) {
+        setPhoneNumber(data.valore);
+        setPhoneRaw(data.valore.replace(country.dial, ""));
+        setEditMode(false);
+      } else {
+        setEditMode(true);
+      }
+    };
+    fetchPhone();
+  }, []);
+
+  // Spinner di caricamento
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-neutral-50 to-neutral-100">
@@ -140,12 +193,32 @@ export default function AdminDashboard() {
     );
   }
 
+  // Mostra errore se non autorizzato, senza redirect loop
   if (!profile || !isAdmin()) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-neutral-50 to-neutral-100">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
-            <p className="text-center text-red-600 mb-4">Accesso negato - Permessi amministratore richiesti</p>
+            <p className="text-center text-red-600 mb-4">
+              Errore: accesso negato o profilo non caricato.<br />
+              <b>DEBUG:</b><br />
+              <pre style={{textAlign:'left',fontSize:'12px',overflow:'auto'}}>
+                {JSON.stringify({
+                  loading,
+                  profile,
+                  user,
+                  role,
+                  isAdmin: isAdmin(),
+                  userId: user?.id,
+                }, null, 2)}
+              </pre>
+              <br />
+              <b>Note:</b><br />
+              - Se <code>profile</code> è null, l'utente non ha un profilo in <code>user_profiles</code>.<br />
+              - <code>role</code> restituito da useUserRole: <b>{role}</b><br />
+              - <code>isAdmin()</code>: <b>{String(isAdmin())}</b><br />
+              - <code>user.id</code>: <b>{user?.id}</b><br />
+            </p>
             <Button 
               onClick={() => navigate(`/cliente/${userId}`)} 
               className="w-full"
@@ -559,9 +632,87 @@ export default function AdminDashboard() {
                       <CardTitle>Configurazione Generale</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-center py-8 text-neutral-500">
-                        <Settings size={48} className="mx-auto mb-4 text-neutral-300" />
-                        <p className="text-sm">Impostazioni in sviluppo</p>
+                      <div className="space-y-6 py-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Settings size={24} className="text-neutral-400" />
+                          <span className="font-semibold text-lg text-neutral-700">Numero telefono notifiche</span>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                          <div className="flex gap-2 items-center">
+                            <CountryPhoneInput 
+                              country={country} 
+                              setCountry={editMode ? setCountry : () => {}} 
+                              phoneRaw={phoneRaw} 
+                              setPhoneRaw={editMode ? setPhoneRaw : () => {}} 
+                              disabled={!editMode}
+                            />
+                            {!editMode ? (
+                              <Button type="button" variant="outline" onClick={() => setEditMode(true)}>
+                                Modifica
+                              </Button>
+                            ) : null}
+                            {editMode ? (
+                              <Button type="button" disabled={savingPhone} onClick={async () => {
+                                setSavingPhone(true);
+                                const valore = country.dial + phoneRaw;
+                                const { error } = await supabase
+                                  .from('configurazione_generale')
+                                  .update({ valore })
+                                  .eq('chiave', 'numero_telefono_notifiche');
+                                setSavingPhone(false);
+                                setPhoneSaved(!error);
+                                if (!error) {
+                                  setPhoneNumber(valore);
+                                  setEditMode(false);
+                                }
+                                setTimeout(() => setPhoneSaved(false), 2000);
+                              }}>
+                                {savingPhone ? 'Salvataggio...' : 'Salva'}
+                              </Button>
+                            ) : null}
+                            {phoneSaved && <span className="text-green-600 text-sm ml-2">Salvato!</span>}
+                          </div>
+                        </div>
+                        <hr className="my-4" />
+                        <div className="flex flex-col gap-2">
+                          <span className="font-semibold text-neutral-700">Invia messaggio di prova</span>
+                          <form className="flex flex-col gap-2" onSubmit={async e => {
+                            e.preventDefault();
+                            setSendingTest(true);
+                            setTestResult(null);
+                            try {
+                              const res = await fetch('/functions/send-sms', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ to: phoneNumber, body: testMessage })
+                              });
+                              if (res.ok) {
+                                setTestResult('success');
+                              } else {
+                                setTestResult('error');
+                              }
+                            } catch {
+                              setTestResult('error');
+                            }
+                            setSendingTest(false);
+                            setTimeout(() => setTestResult(null), 3000);
+                          }}>
+                            <div className="flex gap-2 items-center">
+                              <input
+                                type="text"
+                                className="flex-1 border rounded px-3 py-2 text-base"
+                                value={testMessage}
+                                onChange={e => setTestMessage(e.target.value)}
+                                placeholder="Testo del messaggio"
+                              />
+                              <Button type="submit" disabled={sendingTest || !phoneNumber} variant="outline">
+                                {sendingTest ? 'Invio...' : 'Invia SMS'}
+                              </Button>
+                              {testResult === 'success' && <span className="text-green-600 text-sm ml-2">Inviato!</span>}
+                              {testResult === 'error' && <span className="text-red-600 text-sm ml-2">Errore invio</span>}
+                            </div>
+                          </form>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

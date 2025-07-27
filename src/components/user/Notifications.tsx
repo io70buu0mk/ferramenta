@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNotifications } from "@/hooks/useNotifications";
 
 interface Props {
@@ -10,18 +10,53 @@ interface Props {
 const Notifications = ({ userId, onClose }: Props) => {
   const [activeTab, setActiveTab] = useState<string>("sistema");
   const { notifications, loading, markAsRead, refetch } = useNotifications();
+  const [displayed, setDisplayed] = useState<any[]>([]);
+  const prevNotifications = useRef<any[]>([]);
+  const [firstLoad, setFirstLoad] = useState(true);
 
-  // Polling ogni secondo
+  // Polling ogni secondo, aggiorna solo se cambiano i dati
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    const fetch = () => refetch(userId);
+    const fetch = async () => {
+      await refetch(userId);
+      setFirstLoad(false);
+    };
     fetch();
     interval = setInterval(fetch, 1000);
     return () => clearInterval(interval);
   }, [userId, refetch]);
 
-  // Filtra per tab (tipo)
-  const filtered = notifications.filter(n => n.type === activeTab);
+  // Aggiorna solo se le notifiche sono cambiate (evita flicker)
+  useEffect(() => {
+    const prev = JSON.stringify(prevNotifications.current);
+    const next = JSON.stringify(notifications);
+    if (prev !== next) {
+      setDisplayed(notifications);
+      prevNotifications.current = notifications;
+    }
+    // Se uguali, non aggiorna lo stato (evita scatti)
+  }, [notifications]);
+
+  // Log delle notifiche caricate
+  console.log('[DEBUG] Notifiche caricate:', notifications);
+
+  // Raggruppa le notifiche per notification_id
+  const notificationIdCount: Record<string, number> = {};
+  displayed.forEach(n => {
+    notificationIdCount[n.notification_id] = (notificationIdCount[n.notification_id] || 0) + 1;
+  });
+
+  // Filtra notifiche di sistema/personali
+  let filtered: typeof displayed = [];
+  if (activeTab === "sistema") {
+    // Notifiche di sistema: notification_id presente per più utenti (>=2)
+    filtered = displayed.filter(n => notificationIdCount[n.notification_id] > 1);
+  } else {
+    // Notifiche personali: notification_id presente solo per questo utente
+    filtered = displayed.filter(n => notificationIdCount[n.notification_id] === 1);
+  }
+  // Se il filtro è vuoto, mostra tutte le notifiche per debug
+  const toShow = filtered.length > 0 ? filtered : displayed;
 
   return (
     <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -41,13 +76,13 @@ const Notifications = ({ userId, onClose }: Props) => {
             Personale
           </button>
         </div>
-        {loading ? (
+        {firstLoad && loading ? (
           <div className="text-center py-8">Caricamento...</div>
-        ) : filtered.length === 0 ? (
+        ) : toShow.length === 0 ? (
           <div className="text-center py-8">Nessuna notifica</div>
         ) : (
           <ul>
-            {filtered.map(n => (
+            {toShow.map(n => (
               <li key={n.id} className={`mb-3 p-3 rounded border ${n.is_read ? "bg-gray-100" : "bg-yellow-50 border-yellow-300"}`}>
                 <div className="flex justify-between items-center">
                   <div>

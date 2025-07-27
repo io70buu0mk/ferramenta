@@ -71,15 +71,18 @@ export function useNotifications() {
     message: string;
     type: string;
     link?: string;
+    adminId: string;
   }) => {
-    const { userIds, title, message, type, link } = params;
+    const { userIds, title, message, type, link, adminId } = params;
+    console.log('[DEBUG] addNotification - params:', params);
     // 1. Crea la notifica generica
     const { data: notifData, error: notifError } = await supabase
       .from('notifications')
       .insert([
-        { title, message, type, link: link || null }
+        { title, message, type, link: link || null, created_by: adminId }
       ])
       .select();
+    console.log('[DEBUG] addNotification - notifData:', notifData, 'notifError:', notifError);
     if (notifError || !notifData || !notifData[0]) {
       toast({
         title: 'Errore',
@@ -98,6 +101,7 @@ export function useNotifications() {
     const { error: userNotifError } = await supabase
       .from('user_notifications')
       .insert(inserts);
+    console.log('[DEBUG] addNotification - userNotifError:', userNotifError);
     if (userNotifError) {
       toast({
         title: 'Errore',
@@ -114,4 +118,43 @@ export function useNotifications() {
     addNotification,
     refetch: fetchNotifications
   };
+}
+
+/**
+ * Carica tutte le notifiche inviate dall'admin e lo stato di lettura per ogni utente destinatario
+ * Restituisce: [{ id, title, message, type, created_at, destinatari: [{ userId, nome, cognome, is_read }] }]
+ */
+export async function fetchAdminNotifications(adminId: string) {
+  console.log('[useNotifications] fetchAdminNotifications chiamata con adminId:', adminId);
+  if (!adminId) {
+    console.log('[useNotifications] adminId non fornito, ritorno array vuoto');
+    return [];
+  }
+  // Query: prendi tutte le notifiche create da adminId, con join su user_notifications e user_profiles
+  const { data, error } = await supabase
+    .from('notifications')
+    .select(`id, title, message, type, created_at, user_notifications(user_id, is_read, user_profiles(id, nome, cognome))`)
+    .eq('created_by', adminId)
+    .order('created_at', { ascending: false });
+  console.log('[useNotifications] Risultato query supabase:', { data, error });
+  if (error) {
+    console.error('[useNotifications] Errore fetchAdminNotifications:', error);
+    return [];
+  }
+  // Mappa i destinatari per ogni notifica usando user_profiles
+  const mapped = (data || []).map((n: any) => ({
+    id: n.id,
+    title: n.title,
+    message: n.message,
+    type: n.type,
+    created_at: n.created_at,
+    destinatari: (n.user_notifications || []).map((u: any) => ({
+      userId: u.user_id,
+      nome: u.user_profiles?.nome || '',
+      cognome: u.user_profiles?.cognome || '',
+      is_read: u.is_read
+    }))
+  }));
+  console.log('[useNotifications] Notifiche inviate mappate:', mapped);
+  return mapped;
 }

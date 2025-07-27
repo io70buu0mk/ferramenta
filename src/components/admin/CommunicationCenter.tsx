@@ -33,22 +33,9 @@ import {
   Check,
   AlertCircle
 } from 'lucide-react';
-import AdminChat from './AdminChat';
 import { supabase } from '@/integrations/supabase/client';
-// Wrapper per ottenere l'adminId corrente e passarlo ad AdminChat
-function AdminChatWrapper() {
-  const [adminId, setAdminId] = useState<string | null>(null);
-  React.useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setAdminId(data?.user?.id || null);
-    });
-  }, []);
-  if (!adminId) return <div className="p-8 text-center text-neutral-500">Effettua il login come amministratore per accedere alla chat.</div>;
-  return <AdminChat adminId={adminId} />;
-}
-
 import { useMessages } from '@/hooks/useMessages';
-import { useNotifications } from '@/hooks/useNotifications';
+import { useNotifications, fetchAdminNotifications } from '@/hooks/useNotifications';
 import { useUsers } from '@/hooks/useUsers';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -62,7 +49,28 @@ export function CommunicationCenter() {
   const [newTypeValue, setNewTypeValue] = useState('');
   const [newTypeColorIdx, setNewTypeColorIdx] = useState(0);
   const { messages, loading: messagesLoading, sendMessage } = useMessages();
-  const { notifications, markAsRead, addNotification } = useNotifications();
+  const { notifications, markAsRead, addNotification, refetch } = useNotifications();
+  const [adminId, setAdminId] = useState<string | null>(null);
+  const [adminNotifications, setAdminNotifications] = useState<any[]>([]);
+  // Carica sempre notifiche inviate e ricevute quando cambia adminId
+  useEffect(() => {
+    if (adminId) {
+      console.log('[COMMUNICATION_CENTER] Carico notifiche inviate per adminId:', adminId);
+      fetchAdminNotifications(adminId).then(result => {
+        console.log('[COMMUNICATION_CENTER] Notifiche inviate caricate:', result);
+        setAdminNotifications(result);
+      });
+      // Carica sempre le notifiche ricevute
+      if (typeof refetch === 'function') refetch(adminId);
+    } else {
+      console.log('[COMMUNICATION_CENTER] adminId non disponibile, nessun caricamento notifiche inviate/ricevute');
+    }
+  }, [adminId]);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setAdminId(data?.user?.id || null);
+    });
+  }, []);
   const navigate = useNavigate();
   const { users } = useUsers();
 
@@ -132,14 +140,25 @@ export function CommunicationCenter() {
       const destinatari = newMessage.toAll
         ? users.map(u => u.id)
         : newMessage.recipient_ids;
-      if (destinatari.length === 0) return;
+      console.log('[DEBUG] Destinatari:', destinatari);
+      console.log('[DEBUG] adminId:', adminId);
+      console.log('[DEBUG] Dati notifica:', {
+        userIds: destinatari,
+        title: newMessage.subject,
+        message: newMessage.content,
+        type: newMessage.type,
+        link: undefined,
+        adminId
+      });
+      if (destinatari.length === 0 || !adminId) return;
 
       await addNotification({
         userIds: destinatari,
         title: newMessage.subject,
         message: newMessage.content,
         type: newMessage.type,
-        link: undefined
+        link: undefined,
+        adminId
       });
 
       setNewMessage({
@@ -522,6 +541,36 @@ export function CommunicationCenter() {
                   )
                 )}
               </div>
+              {/* Sezione notifiche inviate dall'admin */}
+              <div className="mt-8">
+                <h3 className="text-lg font-bold mb-2 flex items-center gap-2"><Bell size={16}/> Notifiche inviate</h3>
+                {adminNotifications.length === 0 ? (
+                  <div className="text-neutral-500 text-sm">Nessuna notifica inviata</div>
+                ) : (
+                  <div className="space-y-4">
+                    {adminNotifications.map(notif => (
+                      <div key={notif.id} className="border rounded-lg p-3 bg-neutral-50">
+                        <div className="font-semibold text-base mb-1">{notif.title}</div>
+                        <div className="text-xs text-neutral-700 mb-2">{notif.message}</div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge className={getNotificationTypeColor(notif.type)}>{notif.type}</Badge>
+                          <span className="text-xs text-neutral-500">{formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: it })}</span>
+                        </div>
+                        <div className="mt-2">
+                          <div className="font-semibold text-xs mb-1">Destinatari:</div>
+                          <div className="flex flex-wrap gap-2">
+                            {notif.destinatari.map((u: any) => (
+                              <span key={u.userId} className={`px-2 py-1 rounded text-xs border ${u.is_read ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
+                                {u.nome} {u.cognome} {u.is_read ? '(Letta)' : '(Non letta)'}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -565,7 +614,7 @@ export function CommunicationCenter() {
           <div className="flex-1 flex flex-col bg-neutral-50 overflow-y-auto min-h-0 min-w-0 w-full h-full">
             <div className="flex-1 min-h-0 min-w-0 flex flex-col w-full h-full">
               {/* Chat solo tra amministratori */}
-              <AdminChatWrapper />
+            <div className="text-neutral-400 text-center text-lg p-8">La chat privata tra amministratori è stata disabilitata.</div>
             </div>
           </div>
         </DialogContent>

@@ -8,23 +8,17 @@ export function useUserRole(user: User | null) {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Gestisce i cambiamenti dell'utente solo quando l'ID cambia davvero
+  // Aggiorna userId solo quando cambia user
   useEffect(() => {
     const newUserId = user?.id || null;
-    
-    if (newUserId !== userId) {
-      setUserId(newUserId);
-      
-      if (!newUserId) {
-        setRole(null);
-        setLoading(false);
-        return;
-      }
-      
-      // Inizializza loading solo quando cambia utente
+    setUserId(newUserId);
+    if (!newUserId) {
+      setRole(null);
+      setLoading(false);
+    } else {
       setLoading(true);
     }
-  }, [user, userId]);
+  }, [user]);
 
   // Fetch del ruolo solo quando userId cambia
   useEffect(() => {
@@ -33,7 +27,6 @@ export function useUserRole(user: User | null) {
     const fetchUserRole = async () => {
       try {
         console.log('🔍 Recupero ruolo per utente:', userId);
-        
         const { data: profile, error: profileError } = await supabase
           .from('user_profiles')
           .select('role')
@@ -59,7 +52,7 @@ export function useUserRole(user: User | null) {
     };
 
     fetchUserRole();
-  }, [userId, user?.email]);
+  }, [userId]);
 
   const hasPermission = useCallback(async () => false, []);
   
