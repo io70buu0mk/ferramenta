@@ -41,6 +41,11 @@ export default function AdminOrdersPage() {
                 <div className="font-semibold">{order.email}</div>
                 <div className="text-sm text-neutral-500">Totale: €{order.total}</div>
                 <div className="text-xs text-neutral-400">{order.status}</div>
+                <div className="text-xs text-neutral-400">Pagamento: {order.payment_type || '-'}</div>
+                <div className="text-xs text-neutral-400">Consegna: {order.delivery_type || '-'}</div>
+                {order.delivery_address && <div className="text-xs text-neutral-400">Indirizzo: {order.delivery_address}</div>}
+                {order.notes && <div className="text-xs text-neutral-400">Note: {order.notes}</div>}
+                {order.created_at && <div className="text-xs text-neutral-400">Data: {new Date(order.created_at).toLocaleString()}</div>}
               </div>
               <Button size="sm" onClick={() => setSelectedOrder(order)}>Dettagli</Button>
             </div>
@@ -54,6 +59,11 @@ export default function AdminOrdersPage() {
             <div className="mb-2">Email: {selectedOrder.email}</div>
             <div className="mb-2">Totale: €{selectedOrder.total}</div>
             <div className="mb-2">Stato: {selectedOrder.status}</div>
+            <div className="mb-2">Pagamento: {selectedOrder.payment_type || '-'}</div>
+            <div className="mb-2">Consegna: {selectedOrder.delivery_type || '-'}</div>
+            {selectedOrder.delivery_address && <div className="mb-2">Indirizzo: {selectedOrder.delivery_address}</div>}
+            {selectedOrder.notes && <div className="mb-2">Note: {selectedOrder.notes}</div>}
+            {selectedOrder.created_at && <div className="mb-2">Data: {new Date(selectedOrder.created_at).toLocaleString()}</div>}
             <div className="mb-4">Prodotti:</div>
             <ul className="mb-4">
               {selectedOrder.order_items?.map((item: any) => (

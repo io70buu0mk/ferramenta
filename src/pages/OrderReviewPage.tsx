@@ -8,6 +8,10 @@ export default function OrderReviewPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [paymentType, setPaymentType] = useState("");
+  const [deliveryType, setDeliveryType] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [notes, setNotes] = useState("");
   const items = state.items;
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -41,6 +45,56 @@ export default function OrderReviewPage() {
             required
           />
         </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">Tipo di pagamento</label>
+          <select
+            className="w-full border rounded-lg p-3 bg-neutral-50"
+            value={paymentType}
+            onChange={e => setPaymentType(e.target.value)}
+            required
+          >
+            <option value="">Seleziona...</option>
+            <option value="carta">Carta</option>
+            <option value="contanti">Contanti</option>
+            <option value="bonifico">Bonifico</option>
+          </select>
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">Consegna o ritiro</label>
+          <select
+            className="w-full border rounded-lg p-3 bg-neutral-50"
+            value={deliveryType}
+            onChange={e => setDeliveryType(e.target.value)}
+            required
+          >
+            <option value="">Seleziona...</option>
+            <option value="consegna">Consegna a domicilio</option>
+            <option value="ritiro">Ritiro in negozio</option>
+          </select>
+        </div>
+        {deliveryType === "consegna" && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-neutral-700 mb-2">Indirizzo di consegna</label>
+            <input
+              type="text"
+              className="w-full border rounded-lg p-3 bg-neutral-50"
+              placeholder="Indirizzo completo"
+              value={deliveryAddress}
+              onChange={e => setDeliveryAddress(e.target.value)}
+              required={deliveryType === "consegna"}
+            />
+          </div>
+        )}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">Note aggiuntive</label>
+          <textarea
+            className="w-full border rounded-lg p-3 bg-neutral-50"
+            placeholder="Es. orario preferito, richieste particolari..."
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            rows={2}
+          />
+        </div>
         <div className="mb-4 flex items-center gap-2">
           <input type="checkbox" id="acceptTerms" checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} />
           <label htmlFor="acceptTerms" className="text-sm">Accetto i <a href="/termini" className="underline" target="_blank" rel="noopener noreferrer">termini e condizioni</a></label>
@@ -49,10 +103,18 @@ export default function OrderReviewPage() {
           <Button variant="outline" onClick={() => navigate(-1)}>Torna al carrello</Button>
           <Button
             onClick={() => {
-              if (!email || !acceptTerms) return;
-              navigate("/checkout", { state: { email } });
+              if (!email || !acceptTerms || !paymentType || !deliveryType || (deliveryType === "consegna" && !deliveryAddress)) return;
+              navigate("/checkout", {
+                state: {
+                  email,
+                  paymentType,
+                  deliveryType,
+                  deliveryAddress: deliveryType === "consegna" ? deliveryAddress : undefined,
+                  notes
+                }
+              });
             }}
-            disabled={!email || !acceptTerms}
+            disabled={!email || !acceptTerms || !paymentType || !deliveryType || (deliveryType === "consegna" && !deliveryAddress)}
           >
             Procedi al pagamento
           </Button>

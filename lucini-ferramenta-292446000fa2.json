@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "lucini-ferramenta",
+  "private_key_id": "292446000fa2cf2e8ceb5bfb02236a48a3933506",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCWNkWDtcdfmD9C\nJfcJzWpKeOU1ZRqfiSPMDNe3WFr9dlsSqeF/XB010mGLctFj1wgq7sRPN2Du9xua\nQX/0V3vVoQqeiJsH/m5MrGtE/WKoq40b8+fNdgHjCpp7PD/c7S5PpZgD8R81FYn/\nMtQ9NpDdxDg15OjoEw4I6QFom8vPKq1Faxp/4VV8c8NlSoFtb0SmDEajQWxU8VoD\nYfBqazK9uXvtRtKfJDTl+bjTHvRZifnbccPJyuotWhm9T0BUQapHfZw36cPaHB4a\nQhLVwmwYLHax1qFSF/zGd5VZwhFZy1Ik/W4RDw/WvmJqFC/crn3krFiUTxFd4u9s\nN4IUIBxfAgMBAAECggEAA5E/ZMmt9fl4j2UtF3i9DHUhB+JM+f8r429VLeps+Bxe\nb/ARPXump2ibK3KvZAjZ9BtWBMoiq01lZsoDPOTQuYJVoIdcm7uxZLU79+DG7PNs\nt0KZNRXsrXsPODnULgvptBVmy+yi0cyOQSPfdTxOjGMVsTLGTFJFqWxxm3yxl3Zo\nX2+ShHZCmqNj8eCptP4+o3ssbyUGH+QJYC7/Jn80Ym37U689ysI15qvUo8m6W91F\newdgkuRUR4f7RgqPyJqQ5hbzmjx2aC8CNKGKxDOUgPqhYpPdM6/0SpIzObbN+mJw\nOT59I23qtGN74cK5Ab7d0C+OD52Ve3BsqJqjbKkv0QKBgQC4Xdkbel5IzIwCb+2b\nNOkVKRk7/fXcqrBmR5C75mPc7dM2ipRA3IwpgHv7GgwI+rIcPnUh/uOsF2uRv6Ux\n9uSI6XSt6r39TnaZSjx6HuLEsUVsXSEWmvpaODvryK6ZLVctczCMZk13f8IGc1AT\nFL0u5/fCG6cfjm72t/o0qlI+EQKBgQDQkzZ3TflSHSLuMgE/tbpNtaM+uNvKxVEc\nAXN2k672woACyGDBjr/1ik1AQW6WK/yoWuJkScPg/H+zAl44zk2XmKswuE06mXie\nL2PCzuhEKCSOR6FoVhdwCkBYWEbSKWRFEoGXcLgWjebOcdbUeHGK+Cj7SmRLfcQw\nJo127u0DbwKBgENyGaWCu5E4OxP9LFg2H/qcwV2AB3yFeOjBz4Hdw7Sj0DvIsHmV\n9TSNi02N9s8mHxhUBPe9zj47hx+Xk3BW2L35YbTqBjzvglWLodovCFhaXYJKA3vI\nkEOHBOy5yp3Ax36aAC2skzRfKXTApI+Ga7sII0wAX8AclB1vqnmvwUxxAoGATH7x\nZuguHLOa8Ale8+LOpVmMuaBK3B9qE/9kPYUEknPbRyn+cn7MYF2M35gf2uvfCk/q\n4CU9tfJlU132+JaRVpwjjQbLLEbFOh7fU79W6Ehgv939kKqihfD8kGov7zxHDh4v\ncT9iBMOedvDBfcN+wR0qyp8KEbXakl5RW+FdA/kCgYAn1H4fd30GkA1S8el++u1r\neeLcdg02tAjvoToF8gmbTMQat6fWPUY3gzDmHrTj95F57l9ikJM/LN0znaUdGc8H\nMs+VxKt5ALRmxInv2mIQ146UjmI6QAJOIem4ROyaYVuaEEBpaQCgNBqLR3c0nwfx\nGo0kiT+jqQ+XUxlnudS0TA==\n-----END PRIVATE KEY-----\n",
+  "client_email": "lucini-ferramenta@appspot.gserviceaccount.com",
+  "client_id": "117306986471907250283",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/lucini-ferramenta%40appspot.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

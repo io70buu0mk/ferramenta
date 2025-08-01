@@ -67,6 +67,10 @@ const adminMenuItems = [
 ];
 
 export default function AdminDashboard() {
+  // Stato per titolo notifica di prova
+  const [testTitle, setTestTitle] = useState('');
+  // Stato per lista admin con token FCM
+  const [adminList, setAdminList] = useState([]);
   const { userId } = useParams();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -629,91 +633,67 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card className="bg-white/80 backdrop-blur-sm border border-neutral-200/50">
                     <CardHeader>
-                      <CardTitle>Configurazione Generale</CardTitle>
+                      <CardTitle>Invia messaggio di prova (SMS)</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-6 py-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Settings size={24} className="text-neutral-400" />
-                          <span className="font-semibold text-lg text-neutral-700">Numero telefono notifiche</span>
-                        </div>
-                        <div className="flex flex-col gap-3">
-                          <div className="flex gap-2 items-center">
-                            <CountryPhoneInput 
-                              country={country} 
-                              setCountry={editMode ? setCountry : () => {}} 
-                              phoneRaw={phoneRaw} 
-                              setPhoneRaw={editMode ? setPhoneRaw : () => {}} 
-                              disabled={!editMode}
-                            />
-                            {!editMode ? (
-                              <Button type="button" variant="outline" onClick={() => setEditMode(true)}>
-                                Modifica
-                              </Button>
-                            ) : null}
-                            {editMode ? (
-                              <Button type="button" disabled={savingPhone} onClick={async () => {
-                                setSavingPhone(true);
-                                const valore = country.dial + phoneRaw;
-                                const { error } = await supabase
-                                  .from('configurazione_generale')
-                                  .update({ valore })
-                                  .eq('chiave', 'numero_telefono_notifiche');
-                                setSavingPhone(false);
-                                setPhoneSaved(!error);
-                                if (!error) {
-                                  setPhoneNumber(valore);
-                                  setEditMode(false);
-                                }
-                                setTimeout(() => setPhoneSaved(false), 2000);
-                              }}>
-                                {savingPhone ? 'Salvataggio...' : 'Salva'}
-                              </Button>
-                            ) : null}
-                            {phoneSaved && <span className="text-green-600 text-sm ml-2">Salvato!</span>}
-                          </div>
-                        </div>
-                        <hr className="my-4" />
-                        <div className="flex flex-col gap-2">
-                          <span className="font-semibold text-neutral-700">Invia messaggio di prova</span>
-                          <form className="flex flex-col gap-2" onSubmit={async e => {
-                            e.preventDefault();
-                            setSendingTest(true);
-                            setTestResult(null);
-                            try {
-                              const res = await fetch('/functions/send-sms', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ to: phoneNumber, body: testMessage })
-                              });
-                              if (res.ok) {
-                                setTestResult('success');
-                              } else {
-                                setTestResult('error');
-                              }
-                            } catch {
-                              setTestResult('error');
-                            }
-                            setSendingTest(false);
-                            setTimeout(() => setTestResult(null), 3000);
-                          }}>
-                            <div className="flex gap-2 items-center">
-                              <input
-                                type="text"
-                                className="flex-1 border rounded px-3 py-2 text-base"
-                                value={testMessage}
-                                onChange={e => setTestMessage(e.target.value)}
-                                placeholder="Testo del messaggio"
-                              />
-                              <Button type="submit" disabled={sendingTest || !phoneNumber} variant="outline">
-                                {sendingTest ? 'Invio...' : 'Invia SMS'}
-                              </Button>
-                              {testResult === 'success' && <span className="text-green-600 text-sm ml-2">Inviato!</span>}
-                              {testResult === 'error' && <span className="text-red-600 text-sm ml-2">Errore invio</span>}
-                            </div>
-                          </form>
-                        </div>
-                      </div>
+                      <form className="flex flex-col gap-4 p-2 max-w-md mx-auto" style={{minWidth:280}} onSubmit={async e => {
+                        e.preventDefault();
+                        setSendingTest(true);
+                        setTestResult(null);
+                        try {
+                          // Invia SMS manuale direttamente tramite edge function Supabase
+                          const smsPayload = {
+                            numero: '+393899822879',
+                            messaggio: `${testTitle}\n${testMessage}`
+                          };
+                          console.log('[DEBUG SMS] Invio payload a Supabase:', smsPayload);
+                          const res = await fetch('https://bqrqujqlaizirskgvyst.supabase.co/functions/v1/send-sms', {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify(smsPayload),
+        });
+                          if (res.ok) {
+                            setTestResult('success');
+                            setTestTitle('');
+                            setTestMessage('');
+                          } else {
+                            setTestResult('error');
+                          }
+                        } catch (err) {
+                          setTestResult('error');
+                        }
+                        setSendingTest(false);
+                        setTimeout(() => setTestResult(null), 3000);
+                      }}>
+                        <label className="font-medium text-neutral-700" htmlFor="sms-title">Titolo</label>
+                        <input
+                          id="sms-title"
+                          type="text"
+                          className="border border-neutral-300 rounded px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          value={testTitle}
+                          onChange={e => setTestTitle(e.target.value)}
+                          placeholder="Titolo"
+                          required
+                        />
+                        <label className="font-medium text-neutral-700" htmlFor="sms-body">Corpo del messaggio</label>
+                        <textarea
+                          id="sms-body"
+                          className="border border-neutral-300 rounded px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none"
+                          value={testMessage}
+                          onChange={e => setTestMessage(e.target.value)}
+                          placeholder="Corpo del messaggio"
+                          required
+                          rows={4}
+                        />
+                        <Button type="submit" disabled={sendingTest || !testTitle || !testMessage} variant="outline" className="mt-2">
+                          {sendingTest ? 'Invio...' : 'Invia SMS'}
+                        </Button>
+                        {testResult === 'success' && <span className="text-green-600 text-sm ml-2">SMS inviato!</span>}
+                        {testResult === 'error' && <span className="text-red-600 text-sm ml-2">Errore invio SMS</span>}
+                      </form>
                     </CardContent>
                   </Card>
 

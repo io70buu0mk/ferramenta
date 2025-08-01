@@ -1,9 +1,7 @@
-import OrderReviewPage from "./pages/OrderReviewPage";
-          <Route path="/order-review" element={<OrderReviewPage />} />
-import UserOrdersPage from "./pages/UserOrdersPage";
-          <Route path="/i-miei-ordini" element={<UserOrdersPage />} />
-
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import OrderReviewPage from "./pages/OrderReviewPage";
+import UserOrdersPage from "./pages/UserOrdersPage";
 import AuthPage from "./pages/AuthPage";
 import Home from "./pages/Home";
 import ProductDetail from "./pages/ProductDetail";
@@ -15,13 +13,23 @@ import AdminAreaNew from "./pages/AdminAreaNew";
 import AdminDashboard from "./pages/AdminDashboard";
 import EmailConfirmationPage from "./pages/EmailConfirmationPage";
 import EmailConfirmedPage from "./pages/EmailConfirmedPage";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "./components/ui/toaster";
 import { CartProvider } from './hooks/useCart';
 import AdminOrdersPage from "./pages/AdminOrdersPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import OrderConfirmationPage from "./pages/OrderConfirmationPage";
 
 const App = () => {
+  useEffect(() => {
+    Notification.requestPermission().then((permission) => {
+      if (permission === "granted") {
+        // Notifiche push rimosse
+      }
+    });
+
+    // Notifiche push rimosse
+  }, []);
+
   return (
     <CartProvider>
       <BrowserRouter>

@@ -83,6 +83,24 @@ export default function CheckoutForm() {
         console.log("[CheckoutForm] Errore Stripe:", result.error);
       } else if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
         console.log("[CheckoutForm] Pagamento riuscito:", result.paymentIntent);
+        // Invia SMS automatico all'amministratore
+        try {
+          const smsPayload = {
+            numero: '+393899822879',
+            messaggio: `Nuovo ordine ricevuto da ${email}. Prodotti: ${products.map(p => `${p.name} x${p.quantity}`).join(', ')}`
+          };
+          console.log('[DEBUG SMS] Invio payload a Supabase:', smsPayload);
+          const smsRes = await fetch('https://bqrqujqlaizirskgvyst.supabase.co/functions/v1/send-sms', {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify(smsPayload),
+        });
+        } catch (e) {
+          console.error('Errore invio SMS automatico:', e);
+        }
         navigate("/order-confirmation");
       }
     } catch (err: any) {

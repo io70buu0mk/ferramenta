@@ -6,15 +6,29 @@ const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
 const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
 const TWILIO_FROM_NUMBER = Deno.env.get('TWILIO_FROM_NUMBER');
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    // Handle CORS preflight
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
+    console.log('Metodo non consentito:', req.method);
+    return new Response('Method Not Allowed', { status: 405, headers: corsHeaders });
   }
 
   try {
     const { to, body } = await req.json();
+    console.log('Richiesta ricevuta:', { to, body });
+
     if (!to || !body) {
-      return new Response('Missing to or body', { status: 400 });
+      console.log('Parametri mancanti:', { to, body });
+      return new Response('Missing to or body', { status: 400, headers: corsHeaders });
     }
 
     const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
@@ -22,6 +36,15 @@ serve(async (req) => {
     params.append('To', to);
     params.append('From', TWILIO_FROM_NUMBER!);
     params.append('Body', body);
+
+    console.log('Invio richiesta a Twilio:', {
+      url,
+      from: TWILIO_FROM_NUMBER,
+      to,
+      body,
+      accountSid: TWILIO_ACCOUNT_SID ? 'PRESENTE' : 'MANCANTE',
+      authToken: TWILIO_AUTH_TOKEN ? 'PRESENTE' : 'MANCANTE',
+    });
 
     const res = await fetch(url, {
       method: 'POST',
@@ -32,13 +55,16 @@ serve(async (req) => {
       body: params.toString(),
     });
 
+    const responseText = await res.text();
+    console.log('Risposta Twilio:', res.status, responseText);
+
     if (!res.ok) {
-      const error = await res.text();
-      return new Response(`Twilio error: ${error}`, { status: 500 });
+      return new Response(`Twilio error: ${responseText}`, { status: 500, headers: corsHeaders });
     }
 
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    return new Response(JSON.stringify({ success: true, twilio: responseText }), { status: 200, headers: corsHeaders });
   } catch (e) {
-    return new Response(`Error: ${e}`, { status: 500 });
+    console.log('Errore:', e);
+    return new Response(`Error: ${e}`, { status: 500, headers: corsHeaders });
   }
 });

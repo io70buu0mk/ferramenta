@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useMessages } from '@/hooks/useMessages';
 import { useUsers } from '@/hooks/useUsers';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -42,11 +43,35 @@ export function AdminUserChat({ currentUser }) {
 
   const handleSend = async () => {
     if (!newMsg || !selectedUserId) return;
+    // 1. Invia il messaggio su Supabase
     await sendMessage({
       recipient_id: selectedUserId,
+      subject: '',
       content: newMsg,
       message_type: 'user_group'
     });
+    // 2. Recupera il token FCM del destinatario
+    try {
+      const { data, error } = await supabase
+        .from('user_fcm_tokens')
+        .select('fcm_token')
+        .eq('user_id', selectedUserId)
+        .single();
+      if (!error && data && data.fcm_token) {
+        // 3. Invia la notifica push tramite endpoint backend
+        await fetch('/api/send-fcm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: data.fcm_token,
+            title: 'Nuovo messaggio',
+            body: newMsg
+          })
+        });
+      }
+    } catch (e) {
+      console.error('Errore invio notifica push FCM:', e);
+    }
     setNewMsg('');
   };
 
