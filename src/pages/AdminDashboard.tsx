@@ -38,6 +38,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useMessages } from "@/hooks/useMessages";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { UserManagement } from "@/components/admin/UserManagement";
+import PurchasedProductsAdminSection from "@/components/admin/PurchasedProductsAdminSection";
 import { AdvancedAnalytics } from "@/components/admin/AdvancedAnalytics";
 import { CommunicationCenter } from "@/components/admin/CommunicationCenter";
 
@@ -607,6 +608,12 @@ export default function AdminDashboard() {
               {/* Promotions Tab */}
               <TabsContent value="promotions" className="space-y-4 md:space-y-6">
                 <PromotionsManager />
+              </TabsContent>
+
+              {/* Products Tab - aggiungo sottosezione prodotti acquistati */}
+              <TabsContent value="products" className="space-y-4 md:space-y-6">
+                {/* ...esistente gestione catalogo... */}
+                <PurchasedProductsAdminSection />
               </TabsContent>
 
               {/* Users Tab */}

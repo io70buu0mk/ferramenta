@@ -67,10 +67,13 @@ export default function Index() {
         <section className="bg-white rounded-xl shadow p-8 animate-fade-in">
           <h2 className="text-2xl font-bold text-[#b43434] mb-3">Contatti</h2>
           <p className="text-gray-700 mb-2">
-            Telefono: <span className="font-semibold">+39 0432 123456</span>
+            Telefono: <span className="font-semibold">+39 389 982 2879</span>
           </p>
           <p className="text-gray-700 mb-2">
-            Email: <a href="mailto:info@ferramentapro.it" className="text-[#b43434] underline">info@ferramentapro.it</a>
+            Coordinate: <span className="font-semibold">45.286141, 10.263403</span> <a href="https://maps.google.com/?q=45.286141,10.263403" target="_blank" rel="noopener noreferrer" className="underline text-verdesalvia ml-2">Mappa</a>
+          </p>
+          <p className="text-gray-700 mb-2">
+            Email: <a href="mailto:ferramenta.lucini@gmail.com" className="text-[#b43434] underline">ferramenta.lucini@gmail.com</a>
           </p>
           <p className="text-gray-700 mb-2">
             Indirizzo: <span className="font-semibold">Via Utensili 10, Udine</span>

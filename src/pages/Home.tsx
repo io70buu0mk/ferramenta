@@ -427,17 +427,17 @@ export default function Home() {
             <div className="bg-white border border-neutral-200/50 rounded-2xl p-8 hover:shadow-xl transition-all duration-300 shadow-lg">
               <Phone size={32} className="text-amber-500 mx-auto mb-4" />
               <p className="font-semibold text-neutral-800 mb-2">Telefono</p>
-              <p className="text-neutral-600">031 1234567</p>
+              <p className="text-neutral-600">+39 389 982 2879</p>
             </div>
             <div className="bg-white border border-neutral-200/50 rounded-2xl p-8 hover:shadow-xl transition-all duration-300 shadow-lg">
               <Mail size={32} className="text-amber-500 mx-auto mb-4" />
               <p className="font-semibold text-neutral-800 mb-2">Email</p>
-              <p className="text-neutral-600">info@ferramentalucini.it</p>
+              <p className="text-neutral-600">ferramenta.lucini@gmail.com</p>
             </div>
             <div className="bg-white border border-neutral-200/50 rounded-2xl p-8 hover:shadow-xl transition-all duration-300 shadow-lg">
               <MapPin size={32} className="text-amber-500 mx-auto mb-4" />
               <p className="font-semibold text-neutral-800 mb-2">Indirizzo</p>
-              <p className="text-neutral-600">Via degli Artigiani 14, Como</p>
+              <p className="text-neutral-600">45.286141, 10.263403 <a href="https://maps.google.com/?q=45.286141,10.263403" target="_blank" rel="noopener noreferrer" className="underline text-verdesalvia ml-2">Mappa</a></p>
             </div>
           </div>
         </div>

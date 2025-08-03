@@ -16,21 +16,24 @@ export default function ContattiFerramenta() {
         </h2>
         <div className="text-cemento text-lg font-lato mb-4 leading-relaxed">
           <div className="font-semibold text-antracite mb-1">Ferramenta Lucini Srl</div>
-          Via degli Artigiani 14, Como (CO)
+          45.286141, 10.263403
+          <div className="text-xs text-cemento mt-1">
+            <a href="https://maps.google.com/?q=45.286141,10.263403" target="_blank" rel="noopener noreferrer" className="underline text-verdesalvia">Apri su Google Maps</a>
+          </div>
         </div>
         <div className="flex flex-col gap-4 items-center mt-4">
           <div className="flex items-center text-antracite bg-gradient-to-r from-sabbia/50 to-bianco/50 backdrop-blur-sm px-4 py-2 rounded-xl shadow-lg hover-3d">
             <Wrench className="mr-2 text-senape icon-glow" size={20} />
             <a
-              href="mailto:info@ferramentalucini.it"
+              href="mailto:ferramenta.lucini@gmail.com"
               className="text-ruggine hover:text-senape transition-colors font-medium"
             >
-              info@ferramentalucini.it
+              ferramenta.lucini@gmail.com
             </a>
           </div>
           <div className="flex items-center text-antracite bg-gradient-to-r from-sabbia/50 to-bianco/50 backdrop-blur-sm px-4 py-2 rounded-xl shadow-lg hover-3d">
             <Hammer className="mr-2 text-verdesalvia icon-glow" size={20} />
-            <span className="font-medium">031 1234567</span>
+            <span className="font-medium">+39 389 982 2879</span>
           </div>
         </div>
       </div>

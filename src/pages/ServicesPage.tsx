@@ -296,7 +296,7 @@ export default function ServicesPage() {
               <Button 
                 variant="secondary"
                 className="flex items-center gap-2 bg-white text-amber-600 hover:bg-neutral-50"
-                onClick={() => window.location.href = 'mailto:info@ferramentalucini.it'}
+                onClick={() => window.location.href = 'mailto:ferramenta.lucini@gmail.com'}
               >
                 <Mail size={18} />
                 Invia Email

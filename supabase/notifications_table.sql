@@ -23,3 +23,21 @@ CREATE POLICY "User can update own notifications" ON public.notifications
   FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "User can delete own notifications" ON public.notifications
   FOR DELETE USING (auth.uid() = user_id);
+
+-- Log invio SMS
+CREATE TABLE IF NOT EXISTS public.sms_logs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id uuid,
+    user_id uuid,
+    phone_number text NOT NULL,
+    message text NOT NULL,
+    status text NOT NULL DEFAULT 'pending',
+    error text,
+    sent_at timestamptz DEFAULT now(),
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sms_logs_order_id ON public.sms_logs(order_id);
+CREATE INDEX IF NOT EXISTS idx_sms_logs_user_id ON public.sms_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_sms_logs_sent_at ON public.sms_logs(sent_at);

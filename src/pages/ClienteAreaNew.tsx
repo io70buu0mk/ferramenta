@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import CartSection from '../components/user/CartSection';
+import PurchasedProductsSection from '../components/user/PurchasedProductsSection';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useParams } from "react-router-dom";
@@ -299,6 +300,8 @@ export default function ClienteAreaNew() {
                 <CartSection />
               </CardContent>
             </Card>
+            {/* Prodotti acquistati */}
+            {user && <PurchasedProductsSection userId={user.id} />}
           </div>
           <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-0">
             <CardHeader>

@@ -6,6 +6,11 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [userProfile, setUserProfile] = useState<any | null>(null);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterPayment, setFilterPayment] = useState("");
+  const [filterDate, setFilterDate] = useState("");
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -28,13 +33,76 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }, []);
 
+  // Fetch user profile when selectedOrder changes
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (selectedOrder && selectedOrder.user_id) {
+        try {
+          const res = await fetch(`https://bqrqujqlaizirskgvyst.supabase.co/rest/v1/user_profiles?id=eq.${selectedOrder.user_id}`, {
+            headers: {
+              apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxcnF1anFsYWl6aXJza2d2eXN0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTg4NjcyOSwiZXhwIjoyMDY1NDYyNzI5fQ.v73rp5FQmLVy_R6JYwxHbRu0Qt-pTU2suH0ysE-rICU",
+              Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxcnF1anFsYWl6aXJza2d2eXN0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTg4NjcyOSwiZXhwIjoyMDY1NDYyNzI5fQ.v73rp5FQmLVy_R6JYwxHbRu0Qt-pTU2suH0ysE-rICU`,
+            },
+          });
+          const data = await res.json();
+          setUserProfile(data && data.length > 0 ? data[0] : null);
+        } catch {
+          setUserProfile(null);
+        }
+      } else {
+        setUserProfile(null);
+      }
+    };
+    fetchProfile();
+  }, [selectedOrder]);
+
+  // Filtraggio e ricerca
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch =
+      !search ||
+      (order.email && order.email.toLowerCase().includes(search.toLowerCase())) ||
+      (userProfile && userProfile.nome && userProfile.nome.toLowerCase().includes(search.toLowerCase())) ||
+      (userProfile && userProfile.cognome && userProfile.cognome.toLowerCase().includes(search.toLowerCase()));
+    const matchesStatus = !filterStatus || order.status === filterStatus;
+    const matchesPayment = !filterPayment || order.payment_type === filterPayment;
+    const matchesDate = !filterDate || (order.created_at && order.created_at.startsWith(filterDate));
+    return matchesSearch && matchesStatus && matchesPayment && matchesDate;
+  });
+
   return (
     <div className="max-w-4xl mx-auto py-10">
       <h1 className="text-2xl font-bold mb-6">Ordini ricevuti</h1>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <input
+          type="text"
+          placeholder="Cerca per email, nome, cognome"
+          className="border rounded px-2 py-1"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        <select className="border rounded px-2 py-1" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="">Tutti gli stati</option>
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <select className="border rounded px-2 py-1" value={filterPayment} onChange={e => setFilterPayment(e.target.value)}>
+          <option value="">Tutti i pagamenti</option>
+          <option value="carta">Carta</option>
+          <option value="contanti">Contanti</option>
+        </select>
+        <input
+          type="date"
+          className="border rounded px-2 py-1"
+          value={filterDate}
+          onChange={e => setFilterDate(e.target.value)}
+        />
+      </div>
       {loading && <div>Caricamento...</div>}
       {error && <div className="text-red-600">{error}</div>}
       <ul className="divide-y divide-neutral-200">
-        {orders.map(order => (
+        {filteredOrders.map(order => (
           <li key={order.id} className="py-4">
             <div className="flex justify-between items-center">
               <div>
@@ -57,6 +125,12 @@ export default function AdminOrdersPage() {
           <div className="bg-white rounded-xl p-8 max-w-lg w-full">
             <h2 className="text-xl font-bold mb-4">Dettaglio ordine</h2>
             <div className="mb-2">Email: {selectedOrder.email}</div>
+            {userProfile && (
+              <>
+                <div className="mb-2">Nome: {userProfile.nome} {userProfile.cognome}</div>
+                <div className="mb-2">Telefono: {userProfile.numero_telefono || '-'}</div>
+              </>
+            )}
             <div className="mb-2">Totale: €{selectedOrder.total}</div>
             <div className="mb-2">Stato: {selectedOrder.status}</div>
             <div className="mb-2">Pagamento: {selectedOrder.payment_type || '-'}</div>
