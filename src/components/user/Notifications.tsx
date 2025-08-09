@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef } from "react";
+import { Bell } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 
 interface Props {
@@ -60,44 +61,58 @@ const Notifications = ({ userId, onClose }: Props) => {
 
   return (
     <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg w-[700px] max-h-[90vh] overflow-y-auto p-8 relative">
-        <button className="absolute top-2 right-2 text-gray-500" onClick={onClose}>✕</button>
-        <div className="flex gap-4 mb-4">
+      <div className="bg-white rounded-3xl shadow-2xl w-[700px] max-h-[90vh] overflow-y-auto p-0 relative border border-[#f8e8e3]">
+        {/* Testata */}
+        <div className="flex items-center justify-between px-8 py-5 border-b border-[#f8e8e3] bg-gradient-to-br from-[#f8e8e3] to-white rounded-t-3xl">
+          <div className="flex items-center gap-3">
+            <Bell size={28} className="text-[#b43434]" />
+            <span className="text-xl font-bold text-[#b43434]">Notifiche</span>
+          </div>
+          <button className="text-2xl text-[#b43434] hover:bg-[#f8e8e3] rounded-full w-10 h-10 flex items-center justify-center transition" onClick={onClose} title="Chiudi">×</button>
+        </div>
+        {/* Tabs */}
+        <div className="flex gap-2 px-8 pt-5 pb-2">
           <button
-            className={`px-3 py-1 rounded ${activeTab === "sistema" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+            className={`px-4 py-1 rounded-full font-semibold transition ${activeTab === "sistema" ? "bg-[#b43434] text-white shadow" : "bg-neutral-100 text-[#b43434] hover:bg-neutral-200"}`}
             onClick={() => setActiveTab("sistema")}
           >
             Sistema
           </button>
           <button
-            className={`px-3 py-1 rounded ${activeTab === "personale" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+            className={`px-4 py-1 rounded-full font-semibold transition ${activeTab === "personale" ? "bg-[#b43434] text-white shadow" : "bg-neutral-100 text-[#b43434] hover:bg-neutral-200"}`}
             onClick={() => setActiveTab("personale")}
           >
             Personale
           </button>
         </div>
-        {firstLoad && loading ? (
-          <div className="text-center py-8">Caricamento...</div>
-        ) : toShow.length === 0 ? (
-          <div className="text-center py-8">Nessuna notifica</div>
-        ) : (
-          <ul>
-            {toShow.map(n => (
-              <li key={n.id} className={`mb-3 p-3 rounded border ${n.is_read ? "bg-gray-100" : "bg-yellow-50 border-yellow-300"}`}>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <strong>{n.title}</strong>
-                    <div className="text-sm text-gray-500">{new Date(n.created_at).toLocaleString()}</div>
+        {/* Corpo notifiche */}
+        <div className="px-8 pb-8 pt-2">
+          {firstLoad && loading ? (
+            <div className="text-center py-12 text-[#b43434] font-semibold">Caricamento...</div>
+          ) : toShow.length === 0 ? (
+            <div className="text-center py-12 text-neutral-400">Nessuna notifica</div>
+          ) : (
+            <ul>
+              {toShow.map(n => (
+                <li key={n.id} className={`mb-5 p-5 rounded-2xl border shadow-sm transition flex flex-col gap-2 ${n.is_read ? "bg-neutral-50 border-neutral-200" : "bg-yellow-50 border-yellow-300 ring-2 ring-yellow-200"}`}>
+                  <div className="flex justify-between items-center gap-2">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-[#b43434] text-base flex items-center gap-2">
+                        {n.title}
+                        {!n.is_read && <span className="ml-2 px-2 py-0.5 rounded-full bg-yellow-300 text-yellow-900 text-xs font-bold">NUOVA</span>}
+                      </span>
+                      <span className="text-xs text-neutral-400">{new Date(n.created_at).toLocaleString()}</span>
+                    </div>
+                    {!n.is_read && (
+                      <button className="text-xs text-[#b43434] border border-[#b43434] rounded px-3 py-1 hover:bg-[#f8e8e3] transition font-semibold" onClick={() => markAsRead(n.id)}>Segna come letto</button>
+                    )}
                   </div>
-                  {!n.is_read && (
-                    <button className="text-xs text-blue-600" onClick={() => markAsRead(n.id)}>Segna come letto</button>
-                  )}
-                </div>
-                <div className="mt-2 text-gray-700">{n.message}</div>
-              </li>
-            ))}
-          </ul>
-        )}
+                  <div className="text-neutral-700 text-sm mt-1 whitespace-pre-line">{n.message}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

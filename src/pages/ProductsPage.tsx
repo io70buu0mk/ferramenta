@@ -151,7 +151,7 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-neutral-50 to-neutral-100">
+    <div className="min-h-screen bg-gradient-to-br from-white via-neutral-50 to-neutral-100 px-2 sm:px-0">
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-xl border-b border-neutral-200/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">

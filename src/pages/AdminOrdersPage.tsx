@@ -70,7 +70,7 @@ export default function AdminOrdersPage() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto py-10">
+    <div className="max-w-4xl mx-auto py-10 px-2 sm:px-0">
       <h1 className="text-2xl font-bold mb-6">Ordini ricevuti</h1>
       <div className="flex flex-wrap gap-2 mb-4">
         <input

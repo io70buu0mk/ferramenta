@@ -77,7 +77,7 @@ export default function Home() {
   }, [user, role, roleLoading, isAdmin]);
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative px-2 sm:px-0">
       {/* Fixed Background Image */}
       <div 
         className="fixed inset-0 z-0"

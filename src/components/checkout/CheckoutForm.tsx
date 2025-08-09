@@ -199,13 +199,25 @@ export default function CheckoutForm() {
         .single();
       if (!error && data) userProfile = data;
     }
+    // Data/ora di invio SMS
     const now = new Date();
-    const dataOra = now.toLocaleString();
+    const dataOraInvio = now.toLocaleString();
+    // Data/ora scelta dal cliente
+    let dataOraCliente = "Non specificata";
+    if (deliveryDate && deliveryTime) {
+      // Prova a comporre una stringa leggibile
+      const dataObj = new Date(`${deliveryDate}T${deliveryTime}`);
+      if (!isNaN(dataObj.getTime())) {
+        dataOraCliente = dataObj.toLocaleString();
+      } else {
+        dataOraCliente = `${deliveryDate} ${deliveryTime}`;
+      }
+    } else if (deliveryDate) {
+      dataOraCliente = deliveryDate;
+    }
     const prodottiDettaglio = products.map(p => `${p.name} x${p.quantity} (€${p.price})`).join(', ');
     const totale = products.reduce((sum, p) => sum + (p.price * p.quantity), 0).toFixed(2);
     const luogo = deliveryPlace || "Non specificato";
-    const dataConsegna = deliveryDate || "Non specificata";
-    const orario = deliveryTime || "Non specificato";
     const tipoPagamento = paymentType === "carta" ? "Carta" : "Contanti";
     const nome = userProfile?.nome || "";
     const cognome = userProfile?.cognome || "";
@@ -213,15 +225,14 @@ export default function CheckoutForm() {
     const note = noteAggiuntive || "";
     const smsBody =
       `Nuovo ordine ricevuto\n` +
-      `Data/ora: ${dataOra}\n` +
+      `Data/ora invio SMS: ${dataOraInvio}\n` +
+      `Data/ora richiesta dal cliente: ${dataOraCliente}\n` +
       `Utente: ${nome} ${cognome}\n` +
       `Email: ${email}\n` +
       (telefono ? `Telefono: ${telefono}\n` : "") +
       `Prodotti: ${prodottiDettaglio}\n` +
       `Totale: €${totale}\n` +
       `Luogo: ${luogo}\n` +
-      `Data: ${dataConsegna}\n` +
-      `Orario: ${orario}\n` +
       `Pagamento: ${tipoPagamento}${paymentType === 'contanti' ? ' (alla consegna)' : ''}\n` +
       (note ? `Note: ${note}\n` : "");
     const smsPayload = {
@@ -240,7 +251,7 @@ export default function CheckoutForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 px-2 sm:px-0 w-full max-w-md mx-auto">
       <div className="mb-4">
         <label className="block text-sm font-medium text-neutral-700 mb-2">Email</label>
         <input
@@ -288,7 +299,7 @@ export default function CheckoutForm() {
           />
         </div>
       )}
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:gap-2">
         <div className="flex-1">
           <label className="block text-sm font-medium text-neutral-700 mb-2">Data di consegna/ritiro</label>
           <input
@@ -358,7 +369,7 @@ export default function CheckoutForm() {
       {success && paymentType === 'contanti' ? (
         <div className="text-green-600 text-lg font-semibold mb-2 text-center">
           Ordine salvato e inviato agli amministratori!<br />Riceverai una conferma appena l'ordine sarà preso in carico.<br /><br />
-          <Button className="mt-4" onClick={() => navigate("/")}>Torna alla home</Button>
+          <Button className="mt-4 w-full" onClick={() => navigate("/")}>Torna alla home</Button>
         </div>
       ) : (
         <Button type="submit" disabled={loading || (paymentType === 'carta' && !stripe)} className="w-full">

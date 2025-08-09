@@ -87,12 +87,12 @@ export default function ServicesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-neutral-50 to-neutral-100">
+    <div className="min-h-screen bg-gradient-to-br from-white via-neutral-50 to-neutral-100 px-2 sm:px-0">
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-xl border-b border-neutral-200/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
+            <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
               <Button
                 variant="ghost"
                 size="sm"
@@ -102,16 +102,15 @@ export default function ServicesPage() {
                 <ArrowLeft size={18} />
                 <span className="hidden sm:inline">Torna alla Home</span>
               </Button>
-              
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-lg flex items-center justify-center">
                   <Truck size={18} className="text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl md:text-2xl font-bold text-neutral-800">
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-neutral-800">
                     I Nostri Servizi
                   </h1>
-                  <p className="text-sm text-neutral-600 hidden sm:block">
+                  <p className="text-xs sm:text-sm text-neutral-600 hidden sm:block">
                     Comodità e professionalità per ogni esigenza
                   </p>
                 </div>

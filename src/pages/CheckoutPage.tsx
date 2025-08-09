@@ -10,8 +10,8 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 
 export default function CheckoutPage() {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-white via-neutral-50 to-neutral-100">
-      <div className="w-full max-w-md bg-white/90 rounded-2xl shadow-xl p-8 mt-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-white via-neutral-50 to-neutral-100 px-2 sm:px-0">
+      <div className="w-full max-w-md bg-white/90 rounded-2xl shadow-xl p-4 sm:p-8 mt-8">
         <h2 className="text-2xl font-bold mb-6 text-center text-neutral-800">Pagamento</h2>
         <Elements stripe={stripePromise}>
           <CheckoutForm />

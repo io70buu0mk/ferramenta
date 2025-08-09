@@ -19,8 +19,8 @@ export const Sidebar = ({
 }) => (
   <aside
     className={cn(
-      "transition-all duration-300 bg-white shadow-lg border-r border-gray-200 flex flex-col py-6 px-3 gap-4",
-      collapsed ? "w-[60px]" : "w-[210px]",
+      "transition-all duration-300 bg-white shadow-lg border-r border-gray-200 flex flex-col py-4 px-2 sm:py-6 sm:px-3 gap-2 sm:gap-4",
+      collapsed ? "w-[52px] sm:w-[60px]" : "w-[100vw] sm:w-[210px]",
       "min-h-screen sticky top-0 z-30"
     )}
   >

@@ -50,7 +50,7 @@ export default function PurchasedProductsSection({ userId }: { userId: string })
         <div>Nessun prodotto acquistato.</div>
       ) : (
         <ul className="space-y-4">
-          {items.map(item => {
+          {items.slice(0, 3).map(item => {
             const isPreparazione = item.product_status === 'in_preparazione';
             return (
               <li

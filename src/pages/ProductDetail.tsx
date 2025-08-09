@@ -42,8 +42,8 @@ export default function ProductDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center px-2 sm:px-0">
+        <div className="text-center w-full max-w-md mx-auto">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p>Caricamento prodotto...</p>
         </div>
@@ -53,8 +53,8 @@ export default function ProductDetail() {
 
   if (!product) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center px-2 sm:px-0">
+        <div className="text-center w-full max-w-md mx-auto">
           <Package size={64} className="mx-auto mb-4 text-muted-foreground" />
           <h1 className="text-2xl font-bold mb-2">Prodotto non trovato</h1>
           <p className="text-muted-foreground mb-4">Il prodotto richiesto non esiste o non è disponibile.</p>

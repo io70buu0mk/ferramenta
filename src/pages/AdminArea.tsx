@@ -33,8 +33,8 @@ export default function AdminArea() {
   if (!profile) return null;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f5f5f7] px-2">
-      <div className="bg-white rounded-lg shadow max-w-xl w-full p-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f5f5f7] px-2 sm:px-0">
+      <div className="bg-white rounded-lg shadow max-w-xl w-full p-4 sm:p-8">
         <div className="mb-2 text-sm text-gray-500">Area Amministratore</div>
         <div className="mb-4 text-xl font-bold text-[#b43434]">{profile.email}</div>
         <div className="mb-6 text-gray-800">

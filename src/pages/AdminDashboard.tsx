@@ -238,7 +238,7 @@ export default function AdminDashboard() {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="min-h-screen bg-gradient-to-br from-white via-neutral-50 to-neutral-100 w-full flex">
+      <div className="min-h-screen bg-gradient-to-br from-white via-neutral-50 to-neutral-100 w-full flex px-2 sm:px-0">
         
         {/* Desktop Sidebar */}
         <div className="hidden lg:block">

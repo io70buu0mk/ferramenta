@@ -82,39 +82,7 @@ const CartSection: React.FC = () => {
         </Button>
       )}
 
-      {/* Preferiti */}
-      {wishlist.items.length > 0 && products && products.length > 0 && (
-        <div className="mt-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-semibold text-pink-600">I tuoi preferiti</span>
-            <button className="text-xs underline text-pink-600 ml-auto" onClick={() => setShowWishlistModal(true)}>Vedi altro</button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-              {products.filter(p => wishlist.items.includes(p.id)).slice(0, 2).map(p => (
-                <li key={p.id} className="flex items-center min-w-[350px] bg-pink-50 rounded px-4 py-2 border border-pink-100">
-                  {p.image_url && <img src={p.image_url} alt={p.name} className="w-10 h-10 rounded object-cover" />}
-                  <div className="flex-1 flex flex-col min-w-0 ml-3">
-                    <div className="font-medium text-sm truncate">{p.name}</div>
-                    <div className="text-xs text-neutral-500">€{p.price?.toFixed(2)}</div>
-                  </div>
-                  <div className="flex gap-1 items-center ml-2">
-                    <button
-                      className="text-xs text-pink-600 border border-pink-400 rounded px-2 py-1 hover:bg-pink-100 transition"
-                      onClick={() => wishlistDispatch({ type: 'REMOVE_WISHLIST', id: p.id })}
-                    >Rimuovi</button>
-                    <button
-                      className="p-1 rounded border border-[#b43434] text-[#b43434] hover:bg-[#f8e8e3] transition flex items-center justify-center"
-                      title="Aggiungi al carrello"
-                      onClick={() => dispatch({ type: 'ADD_ITEM', product: { id: p.id, name: p.name, price: p.price, image: p.image_url, quantity: 1 } })}
-                    >
-                      <ShoppingCart size={18} />
-                    </button>
-                  </div>
-                </li>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* Modale carrello completo */}
       <CartModal open={showCartModal} onOpenChange={setShowCartModal} />
