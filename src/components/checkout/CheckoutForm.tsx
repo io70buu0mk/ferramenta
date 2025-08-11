@@ -144,21 +144,39 @@ export default function CheckoutForm() {
           return;
         }
         // Flusso pagamento con carta
-        const res = await fetch("https://bqrqujqlaizirskgvyst.functions.supabase.co/create-payment-intent", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { "Authorization": `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({ email, products }),
+        const paymentIntentUrl = "https://bqrqujqlaizirskgvyst.supabase.co/functions/v1/create-payment-intent";
+        const paymentIntentBody = { email, products };
+        let paymentIntentResponse = null;
+        let paymentIntentJson = null;
+        let paymentIntentLogs = null;
+        try {
+          paymentIntentResponse = await fetch(paymentIntentUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify(paymentIntentBody),
+          });
+          paymentIntentJson = await paymentIntentResponse.json();
+          paymentIntentLogs = paymentIntentJson.debug || paymentIntentJson.logs;
+        } catch (e) {
+          setError("Errore di rete nella chiamata a create-payment-intent: " + e.message);
+          setLoading(false);
+          return;
+        }
+        setDebugInfo({
+          url: paymentIntentUrl,
+          body: paymentIntentBody,
+          response: paymentIntentJson,
+          logs: paymentIntentLogs
         });
-        const dataRes = await res.json();
-        if (!dataRes.clientSecret) {
+        if (!paymentIntentJson.clientSecret) {
           setError("Errore nella creazione del pagamento.");
           setLoading(false);
           return;
         }
-        const result = await stripe.confirmCardPayment(dataRes.clientSecret, {
+        const result = await stripe.confirmCardPayment(paymentIntentJson.clientSecret, {
           payment_method: {
             card: elements.getElement(CardElement)!,
             billing_details: { email },
@@ -249,6 +267,9 @@ export default function CheckoutForm() {
       body: JSON.stringify(smsPayload),
     });
   }
+
+  // Stato per debug avanzato
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 px-2 sm:px-0 w-full max-w-md mx-auto">
@@ -366,6 +387,16 @@ export default function CheckoutForm() {
         />
       </div>
       {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
+      {/* DEBUG INFO: Mostra dettagli chiamata payment intent e log Supabase */}
+      {debugInfo && (
+        <div className="bg-neutral-100 border border-neutral-300 rounded p-3 text-xs mt-4 overflow-x-auto">
+          <b>DEBUG Payment Intent</b>
+          <pre>URL: {debugInfo.url}</pre>
+          <pre>Body: {JSON.stringify(debugInfo.body, null, 2)}</pre>
+          <pre>Response: {JSON.stringify(debugInfo.response, null, 2)}</pre>
+          <pre>Logs: {JSON.stringify(debugInfo.logs, null, 2)}</pre>
+        </div>
+      )}
       {success && paymentType === 'contanti' ? (
         <div className="text-green-600 text-lg font-semibold mb-2 text-center">
           Ordine salvato e inviato agli amministratori!<br />Riceverai una conferma appena l'ordine sarà preso in carico.<br /><br />

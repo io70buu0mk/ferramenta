@@ -47,6 +47,7 @@ import { PromotionsManager } from "@/components/admin/PromotionsManager";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
+import TestPaymentForm from "@/components/admin/TestPaymentForm";
 
 type UserProfile = {
   nome: string;
@@ -713,6 +714,15 @@ export default function AdminDashboard() {
                         <Shield size={48} className="mx-auto mb-4 text-neutral-300" />
                         <p className="text-sm">Impostazioni sicurezza in sviluppo</p>
                       </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-white/80 backdrop-blur-sm border border-neutral-200/50">
+                    <CardHeader>
+                      <CardTitle>Pagamento di test</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <TestPaymentForm />
                     </CardContent>
                   </Card>
                 </div>

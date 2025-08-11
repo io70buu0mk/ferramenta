@@ -1,10 +1,11 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User, LogOut, Home, Mail, Phone, AtSign, Shield, Settings } from "lucide-react";
+import TestMessageSender from "@/components/admin/TestMessageSender";
+import TestPaymentForm from "@/components/admin/TestPaymentForm";
 import { useUserRole } from "@/hooks/useUserRole";
 
 type UserProfile = {
@@ -268,6 +269,38 @@ export default function AdminAreaNew() {
               <p className="text-cemento text-center py-8">
                 Funzionalità in sviluppo
               </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Pagamenti di test */}
+        <div className="mt-12 max-w-xl mx-auto">
+          <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-0">
+            <CardHeader>
+              <CardTitle className="text-antracite flex items-center gap-2">
+                <Settings size={20} />
+                Pagamenti di test
+              </CardTitle>
+              <CardDescription>Simula un pagamento inserendo i dati di test</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TestPaymentForm />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sezione test invio messaggi */}
+        <div className="mt-12 max-w-xl mx-auto">
+          <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-0">
+            <CardHeader>
+              <CardTitle className="text-antracite flex items-center gap-2">
+                <Mail size={20} />
+                Invia messaggio di test
+              </CardTitle>
+              <CardDescription>Invia un SMS di prova a un numero amministratore</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TestMessageSender />
             </CardContent>
           </Card>
         </div>
