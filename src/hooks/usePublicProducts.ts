@@ -7,7 +7,7 @@ export type PublicProduct = {
   description: string | null;
   price: number | null;
   category: string | null;
-  image_url: string | null;
+  images: string[];
   stock_quantity: number;
 };
 
@@ -19,7 +19,7 @@ export function usePublicProducts() {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, description, price, category, image_url, stock_quantity')
+        .select('id, name, description, price, category, images, stock_quantity')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 

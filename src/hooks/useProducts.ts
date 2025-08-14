@@ -8,7 +8,7 @@ export type Product = {
   description: string | null;
   price: number | null;
   category: string | null;
-  image_url: string | null;
+  images: string[];
   stock_quantity: number;
   is_active: boolean;
   created_at: string;
@@ -51,6 +51,7 @@ export function useProducts() {
         .from('products')
         .insert([{
           ...productData,
+          images: productData.images ?? [],
           created_by: user.id
         }])
         .select()
@@ -81,6 +82,7 @@ export function useProducts() {
         .from('products')
         .update({
           ...updates,
+          images: updates.images ?? [],
           updated_at: new Date().toISOString()
         })
         .eq('id', id)

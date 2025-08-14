@@ -9,6 +9,7 @@ import { PublicProduct } from '@/hooks/usePublicProducts';
 import { useProductPromotions } from '@/hooks/useProductPromotions';
 
 export default function ProductDetail() {
+  const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const { dispatch, wishlist, wishlistDispatch } = useCart();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ export default function ProductDetail() {
       try {
         const { data, error } = await supabase
           .from('products')
-          .select('id, name, description, price, category, image_url, stock_quantity')
+          .select('id, name, description, price, category, images, stock_quantity')
           .eq('id', id)
           .eq('is_active', true)
           .single();
@@ -101,7 +102,7 @@ export default function ProductDetail() {
         id: product.id,
         name: product.name,
         price: finalPrice || product.price,
-        image: product.image_url,
+  image: product.images?.[0],
         quantity: 1,
       },
     });
@@ -133,14 +134,15 @@ export default function ProductDetail() {
       {/* Product Details */}
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="grid md:grid-cols-2 gap-12">
-          {/* Product Image */}
+          {/* Product Image stile Amazon */}
           <div className="space-y-4">
-            <div className="aspect-square bg-muted rounded-2xl overflow-hidden relative">
-              {product.image_url ? (
-                <img 
-                  src={product.image_url} 
-                  alt={product.name}
-                  className="w-full h-full object-cover"
+            <div className="aspect-square bg-muted rounded-2xl overflow-hidden relative flex items-center justify-center">
+              {product.images && product.images.length > 0 ? (
+                <img
+                  src={product.images[selectedImageIdx]}
+                  alt={`${product.name} immagine principale`}
+                  className="w-full h-full object-contain rounded-2xl transition-all duration-300 shadow-lg"
+                  style={{ maxHeight: '420px', background: '#fff' }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -151,6 +153,27 @@ export default function ProductDetail() {
                 <div className="absolute top-2 right-2 z-10">{badge}</div>
               )}
             </div>
+            {/* Thumbnails scrollabili */}
+            {product.images && product.images.length > 1 && (
+              <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
+                {product.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedImageIdx(idx)}
+                    className={`w-20 h-20 rounded-lg border-2 transition-all duration-200 overflow-hidden focus:outline-none ${selectedImageIdx === idx ? 'border-amber-500 scale-105 shadow-lg' : 'border-neutral-200 hover:border-amber-400'}`}
+                    style={{ background: '#fff' }}
+                  >
+                    <img
+                      src={img}
+                      alt={`${product.name} thumbnail ${idx+1}`}
+                      className="w-full h-full object-cover"
+                      style={{ transition: 'transform 0.2s' }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Info */}
@@ -253,9 +276,9 @@ export default function ProductDetail() {
                 onClick={() => navigate(`/prodotto/${prod.id}`)}
               >
                 <div className="h-48 overflow-hidden relative">
-                  {prod.image_url ? (
+                  {prod.images && prod.images.length > 0 ? (
                     <img 
-                      src={prod.image_url} 
+                      src={prod.images[0]}
                       alt={prod.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />

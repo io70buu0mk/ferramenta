@@ -42,7 +42,7 @@ import PurchasedProductsAdminSection from "@/components/admin/PurchasedProductsA
 import { AdvancedAnalytics } from "@/components/admin/AdvancedAnalytics";
 import { CommunicationCenter } from "@/components/admin/CommunicationCenter";
 
-import { ProductForm } from "@/components/admin/ProductForm";
+import ProductForm from "@/components/admin/ProductForm";
 import { PromotionsManager } from "@/components/admin/PromotionsManager";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { formatDistanceToNow } from "date-fns";
@@ -558,7 +558,11 @@ export default function AdminDashboard() {
                       ) : products.length > 0 ? (
                         <div className="grid gap-4">
                           {products.map((product) => (
-                            <div key={product.id} className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg">
+                            <div
+                              key={product.id}
+                              className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg cursor-pointer hover:bg-amber-50 transition"
+                              onClick={() => navigate(`/admin/prodotto/${product.id}`)}
+                            >
                               <div className="flex-1">
                                 <h3 className="font-medium text-neutral-800">{product.name}</h3>
                                 <p className="text-sm text-neutral-600">{product.category}</p>
@@ -566,7 +570,7 @@ export default function AdminDashboard() {
                                   Prezzo: €{product.price} - Stock: {product.stock_quantity}
                                 </p>
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -732,12 +736,12 @@ export default function AdminDashboard() {
         </div>
 
         <ProductForm
-          open={productFormOpen}
-          onOpenChange={(open) => {
-            setProductFormOpen(open);
-            if (!open) setEditingProduct(null);
-          }}
           product={editingProduct}
+          onSave={(prod) => console.log('Salva prodotto', prod)}
+          onDelete={() => console.log('Elimina prodotto')}
+          categories={['Utensili', 'Ferramenta', 'Elettrici', 'Test']}
+          promotions={[]}
+          onManagePromotions={() => console.log('Gestisci promozioni')}
         />
       </div>
     </SidebarProvider>

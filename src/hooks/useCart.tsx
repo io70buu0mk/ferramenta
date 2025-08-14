@@ -8,17 +8,18 @@ const initialWishlist: WishlistState = {
 
 type WishlistAction =
   | { type: 'ADD_WISHLIST'; id: string }
-  | { type: 'REMOVE_WISHLIST'; id: string };
+  | { type: 'REMOVE_WISHLIST'; id: string }
+  | { type: 'RESET'; items: string[] };
 
 function wishlistReducer(state: WishlistState, action: WishlistAction): WishlistState {
   switch (action.type) {
     case 'ADD_WISHLIST':
       if (state.items.includes(action.id)) return state;
-      toast({ title: 'Aggiunto ai preferiti', description: 'Prodotto aggiunto alla wishlist.' });
       return { ...state, items: [...state.items, action.id] };
     case 'REMOVE_WISHLIST':
-      toast({ title: 'Rimosso dai preferiti', description: 'Prodotto rimosso dalla wishlist.' });
       return { ...state, items: state.items.filter(i => i !== action.id) };
+    case 'RESET':
+      return { ...state, items: action.items };
     default:
       return state;
   }
@@ -98,14 +99,28 @@ export const useCart = () => useContext(CartContext);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = React.useReducer(cartReducer, initialState);
-  const [wishlist, wishlistDispatch] = React.useReducer(wishlistReducer, initialWishlist, (init) => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('wishlist');
-      return stored ? JSON.parse(stored) : init;
-    }
-    return init;
-  });
+  const [wishlist, wishlistDispatch] = React.useReducer(wishlistReducer, initialWishlist);
   const [userId, setUserId] = React.useState<string | null>(null);
+
+  // Carica wishlist da Supabase (dopo la dichiarazione di userId)
+  useEffect(() => {
+    if (!userId) {
+      wishlistDispatch({ type: 'RESET', items: [] }); // svuota
+      return;
+    }
+    (async () => {
+      const { data, error } = await supabase
+        .from('wishlist')
+        .select('product_id')
+        .eq('user_id', userId);
+      if (error) {
+        console.error('[useCart] Errore caricamento wishlist:', error);
+        return;
+      }
+      const items = (data || []).map((row: any) => row.product_id);
+      wishlistDispatch({ type: 'RESET', items });
+    })();
+  }, [userId]);
   // Carica userId
   useEffect(() => {
     console.log('[useCart] useEffect getUserId - start');
@@ -235,7 +250,31 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast({ title: 'Carrello svuotato', description: 'Tutti i prodotti sono stati rimossi.' });
   }, [userId]);
 
-  // Espone le azioni come dispatch custom
+
+  // Gestione preferiti su Supabase
+  const addWishlist = useCallback(async (productId: string) => {
+    if (!userId) return;
+    const { error } = await supabase.from('wishlist').insert({ user_id: userId, product_id: productId });
+    if (error) {
+      toast({ title: 'Errore', description: 'Impossibile aggiungere ai preferiti', variant: 'destructive' });
+      return;
+    }
+    wishlistDispatch({ type: 'ADD_WISHLIST', id: productId });
+    toast({ title: 'Aggiunto ai preferiti', description: 'Prodotto aggiunto alla wishlist.' });
+  }, [userId]);
+
+  const removeWishlist = useCallback(async (productId: string) => {
+    if (!userId) return;
+    const { error } = await supabase.from('wishlist').delete().eq('user_id', userId).eq('product_id', productId);
+    if (error) {
+      toast({ title: 'Errore', description: 'Impossibile rimuovere dai preferiti', variant: 'destructive' });
+      return;
+    }
+    wishlistDispatch({ type: 'REMOVE_WISHLIST', id: productId });
+    toast({ title: 'Rimosso dai preferiti', description: 'Prodotto rimosso dalla wishlist.' });
+  }, [userId]);
+
+  // Custom dispatch per carrello
   const customDispatch = useCallback((action: CartAction) => {
     switch (action.type) {
       case 'ADD_ITEM':
@@ -255,12 +294,24 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [addItem, removeItem, updateQuantity, clearCart]);
 
-  useEffect(() => {
-    localStorage.setItem('wishlist', JSON.stringify(wishlist));
-  }, [wishlist]);
+  // Custom dispatch per wishlist
+  const customWishlistDispatch = useCallback((action: WishlistAction) => {
+    switch (action.type) {
+      case 'ADD_WISHLIST':
+        addWishlist(action.id);
+        break;
+      case 'REMOVE_WISHLIST':
+        removeWishlist(action.id);
+        break;
+      default:
+        break;
+    }
+  }, [addWishlist, removeWishlist]);
+
+
 
   return (
-    <CartContext.Provider value={{ state, dispatch: customDispatch, wishlist, wishlistDispatch }}>
+    <CartContext.Provider value={{ state, dispatch: customDispatch, wishlist, wishlistDispatch: customWishlistDispatch }}>
       {children}
     </CartContext.Provider>
   );

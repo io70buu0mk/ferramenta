@@ -11,6 +11,7 @@ import ClienteAreaNew from "./pages/ClienteAreaNew";
 import AdminArea from "./pages/AdminArea";
 import AdminAreaNew from "./pages/AdminAreaNew";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminProductDetail from "./pages/AdminProductDetail";
 import EmailConfirmationPage from "./pages/EmailConfirmationPage";
 import EmailConfirmedPage from "./pages/EmailConfirmedPage";
 import { Toaster } from "./components/ui/toaster";
@@ -46,6 +47,7 @@ const App = () => {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/:userId" element={<AdminDashboard />} />
           <Route path="/admin-old" element={<AdminArea />} />
+          <Route path="/admin/prodotto/:id" element={<AdminProductDetail />} />
           <Route path="/admin-old/:userId" element={<AdminAreaNew />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
