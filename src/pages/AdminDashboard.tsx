@@ -1,8 +1,57 @@
+import React from 'react';
+import { Button } from '@/components/ui/button';
+// Componente per mostrare le bozze prodotti
+// Componente per mostrare le bozze prodotti
+// ---
+// Versione unica e corretta della funzione BozzeProdottiList
+function BozzeProdottiList() {
+  const [draftProducts, setDraftProducts] = React.useState([]);
+  const [draftLoading, setDraftLoading] = React.useState(true);
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    async function fetchDraftProducts() {
+      setDraftLoading(true);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('status', 'draft')
+        .order('created_at', { ascending: false });
+      if (error) {
+        setDraftProducts([]);
+      } else {
+        setDraftProducts(data || []);
+      }
+      setDraftLoading(false);
+    }
+    fetchDraftProducts();
+  }, []);
+
+  if (draftLoading) return <div className="text-gray-400">Caricamento bozze...</div>;
+  if (draftProducts.length === 0) return <div className="text-gray-400">Nessuna bozza presente.</div>;
+  return (
+    <ul className="divide-y divide-gray-200">
+      {draftProducts.map(prod => (
+        <li key={prod.id} className="py-3 flex items-center justify-between">
+          <div>
+            <span className="font-bold text-[#b43434]">{prod.name || 'Senza nome'}</span>
+            <span className="ml-2 text-sm text-gray-500">{prod.category}</span>
+          </div>
+          <Button
+            size="sm"
+            className="bg-yellow-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition"
+            onClick={() => { navigate(`/admin/prodotto/${prod.id}`); }}
+          >Modifica</Button>
+        </li>
+      ))}
+    </ul>
+  );
+}
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+// importazione duplicata rimossa
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { countries } from "@/utils/countries";
 import { CountryPhoneInput } from "@/components/admin/CountryPhoneInput";
@@ -69,6 +118,8 @@ const adminMenuItems = [
 ];
 
 export default function AdminDashboard() {
+  // Stato per la modale bozze
+  const [showDraftModal, setShowDraftModal] = useState(false);
   // Stato per titolo notifica di prova
   const [testTitle, setTestTitle] = useState('');
   // Stato per lista admin con token FCM
@@ -514,16 +565,27 @@ export default function AdminDashboard() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <h2 className="text-xl md:text-2xl font-bold text-neutral-800">Gestione Prodotti</h2>
                   <div className="flex items-center gap-2 md:gap-3 overflow-x-auto">
-                    <Button variant="outline" size="sm" className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-                      <Download size={14} className="md:w-4 md:h-4" />
-                      <span className="hidden sm:inline">Esporta</span>
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-                      <Upload size={14} className="md:w-4 md:h-4" />
-                      <span className="hidden sm:inline">Importa</span>
-                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-yellow-400 text-white font-semibold rounded-lg hover:bg-yellow-500 transition flex-shrink-0"
+                      onClick={() => setShowDraftModal(true)}
+                    >Gestisci bozze</Button>
+      {/* Modal gestione bozze prodotti */}
+      {showDraftModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 min-w-[340px] max-w-[90vw] border-2 border-yellow-300 relative">
+            <button
+              className="absolute top-4 right-4 text-2xl text-yellow-500 hover:text-red-500 font-bold bg-white rounded-full border border-yellow-200 w-10 h-10 flex items-center justify-center shadow"
+              onClick={() => setShowDraftModal(false)}
+              aria-label="Chiudi bozze"
+            >×</button>
+            <h2 className="text-xl font-bold text-[#b43434] mb-4">Bozze prodotti</h2>
+            <BozzeProdottiList />
+          </div>
+        </div>
+      )}
                     <Button 
-                      onClick={() => setProductFormOpen(true)}
+                      onClick={() => navigate('/admin/prodotto/nuovo')}
                       size="sm"
                       className="flex items-center gap-1 md:gap-2 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 flex-shrink-0"
                     >
@@ -531,6 +593,57 @@ export default function AdminDashboard() {
                       <span className="hidden sm:inline">Nuovo</span>
                       <span className="sm:hidden">+</span>
                     </Button>
+
+
+
+{/* ---
+// Versione unica e corretta della funzione BozzeProdottiList
+// (le importazioni sono già presenti in cima al file)
+
+
+function BozzeProdottiList() {
+  const [draftProducts, setDraftProducts] = React.useState<any[]>([]);
+  const [draftLoading, setDraftLoading] = React.useState(true);
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    async function fetchDraftProducts() {
+      setDraftLoading(true);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('status', 'draft')
+        .order('created_at', { ascending: false });
+      if (error) {
+        setDraftProducts([]);
+      } else {
+        setDraftProducts(data || []);
+      }
+      setDraftLoading(false);
+    }
+    fetchDraftProducts();
+  }, []);
+
+  if (draftLoading) return <div className="text-gray-400">Caricamento bozze...</div>;
+  if (draftProducts.length === 0) return <div className="text-gray-400">Nessuna bozza presente.</div>;
+  return (
+    <ul className="divide-y divide-gray-200">
+      {draftProducts.map(prod => (
+        <li key={prod.id} className="py-3 flex items-center justify-between">
+          <div>
+            <span className="font-bold text-[#b43434]">{prod.name || 'Senza nome'}</span>
+            <span className="ml-2 text-sm text-gray-500">{prod.category}</span>
+          </div>
+          <Button
+            size="sm"
+            className="bg-yellow-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition"
+            onClick={() => { navigate(`/admin/prodotto/${prod.id}`); }}
+          >Modifica</Button>
+        </li>
+      ))}
+    </ul>
+  );
+} */}
                   </div>
                 </div>
 
@@ -563,21 +676,33 @@ export default function AdminDashboard() {
                               className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg cursor-pointer hover:bg-amber-50 transition"
                               onClick={() => navigate(`/admin/prodotto/${product.id}`)}
                             >
-                              <div className="flex-1">
-                                <h3 className="font-medium text-neutral-800">{product.name}</h3>
-                                <p className="text-sm text-neutral-600">{product.category}</p>
-                                <p className="text-sm text-neutral-500">
-                                  Prezzo: €{product.price} - Stock: {product.stock_quantity}
-                                </p>
+                              <div className="flex items-center gap-4 flex-1">
+                                {/* Immagine prodotto o icona placeholder */}
+                                {product.images && product.images.length > 0 ? (
+                                  <img
+                                    src={product.images[0]}
+                                    alt={product.name}
+                                    className="w-14 h-14 object-cover rounded-lg border border-neutral-200 bg-white"
+                                    onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = ''; }}
+                                  />
+                                ) : (
+                                  <div className="w-14 h-14 flex items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50">
+                                    <Package size={32} className="text-neutral-300" />
+                                  </div>
+                                )}
+                                <div>
+                                  <h3 className="font-medium text-neutral-800">{product.name}</h3>
+                                  <p className="text-sm text-neutral-600">{product.category}</p>
+                                  <p className="text-sm text-neutral-500">
+                                    Prezzo: €{product.price} - Stock: {product.stock_quantity}
+                                  </p>
+                                </div>
                               </div>
                               <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => {
-                                    setEditingProduct(product);
-                                    setProductFormOpen(true);
-                                  }}
+                                  onClick={() => navigate(`/admin/prodotto/${product.id}`)}
                                 >
                                   <Edit size={16} />
                                 </Button>
@@ -598,7 +723,7 @@ export default function AdminDashboard() {
                           <p className="text-lg font-medium mb-2">Nessun prodotto trovato</p>
                           <p className="text-sm">Inizia aggiungendo il tuo primo prodotto</p>
                           <Button 
-                            onClick={() => setProductFormOpen(true)}
+                            onClick={() => navigate('/admin/prodotto/nuovo')}
                             className="mt-4 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600"
                           >
                             Aggiungi Prodotto
@@ -735,14 +860,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <ProductForm
-          product={editingProduct}
-          onSave={(prod) => console.log('Salva prodotto', prod)}
-          onDelete={() => console.log('Elimina prodotto')}
-          categories={['Utensili', 'Ferramenta', 'Elettrici', 'Test']}
-          promotions={[]}
-          onManagePromotions={() => console.log('Gestisci promozioni')}
-        />
+  {/* Modal eliminato: ora la modifica porta alla pagina dettaglio prodotto */}
       </div>
     </SidebarProvider>
   );

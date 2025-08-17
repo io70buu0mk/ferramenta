@@ -28,16 +28,37 @@ import CartModalTrigger from "@/components/user/CartModalTrigger";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function ProductsPage() {
+  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const { role, loading: roleLoading, isAdmin } = useUserRole(user);
+  // Stato per le bozze prodotti
+  const [draftProducts, setDraftProducts] = useState([]);
+  const [draftLoading, setDraftLoading] = useState(true);
+  useEffect(() => {
+    async function fetchDraftProducts() {
+      setDraftLoading(true);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('status', 'draft')
+        .order('created_at', { ascending: false });
+      if (error) {
+        setDraftProducts([]);
+      } else {
+        setDraftProducts(data || []);
+      }
+      setDraftLoading(false);
+    }
+    const isAdminValue = isAdmin();
+    if (isAdminValue) fetchDraftProducts();
+  }, [isAdmin]);
   const { dispatch, wishlist, wishlistDispatch } = useCart();
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [priceRange, setPriceRange] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name");
   const [showFilters, setShowFilters] = useState(false);
-  
-  const { role, loading: roleLoading, isAdmin } = useUserRole(user);
   const { products, loading: productsLoading } = usePublicProducts();
   const { promotions, loading: promotionsLoading, refetch, getPromotionProducts } = usePromotions();
   const [promoOnly, setPromoOnly] = useState(false);
@@ -151,9 +172,16 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-neutral-50 to-neutral-100 px-2 sm:px-0">
+  <div className="min-h-screen bg-gradient-to-br from-white via-neutral-50 to-neutral-100 px-2 sm:px-0">
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-xl border-b border-neutral-200/50 sticky top-0 z-50">
+        <div className="flex justify-end mb-2">
+          <Button
+            size="sm"
+            className="bg-yellow-400 text-white font-semibold rounded-lg hover:bg-yellow-500 transition"
+            onClick={() => setShowDraftModal(true)}
+          >Gestisci bozze</Button>
+        </div>
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -350,6 +378,67 @@ export default function ProductsPage() {
         </div>
 
         {/* Results Summary */}
+      {/* Modal gestione bozze prodotti */}
+  {showDraftModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 min-w-[340px] max-w-[90vw] border-2 border-yellow-300 relative">
+            <button
+              className="absolute top-4 right-4 text-2xl text-yellow-500 hover:text-red-500 font-bold bg-white rounded-full border border-yellow-200 w-10 h-10 flex items-center justify-center shadow"
+              onClick={() => setShowDraftModal(false)}
+              aria-label="Chiudi bozze"
+            >×</button>
+            <h2 className="text-xl font-bold text-[#b43434] mb-4">Bozze prodotti</h2>
+            {draftLoading ? (
+              <div className="text-gray-400">Caricamento bozze...</div>
+            ) : draftProducts.length === 0 ? (
+              <div className="text-gray-400">Nessuna bozza presente.</div>
+            ) : (
+              <ul className="divide-y divide-gray-200">
+                {draftProducts.map(prod => (
+                  <li key={prod.id} className="py-3 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-[#b43434]">{prod.name || 'Senza nome'}</span>
+                      <span className="ml-2 text-sm text-gray-500">{prod.category}</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="bg-yellow-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition"
+                      onClick={() => { setShowDraftModal(false); navigate(`/admin/prodotti/${prod.id}`); }}
+                    >Modifica</Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+        {/* Sezione bozze prodotti per admin */}
+        {isAdmin() && (
+          <div className="mb-10">
+            <h2 className="text-lg font-bold text-[#b43434] mb-2">Bozze prodotti</h2>
+            {draftLoading ? (
+              <div className="text-gray-400">Caricamento bozze...</div>
+            ) : draftProducts.length === 0 ? (
+              <div className="text-gray-400">Nessuna bozza presente.</div>
+            ) : (
+              <ul className="divide-y divide-gray-200">
+                {draftProducts.map(prod => (
+                  <li key={prod.id} className="py-3 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-[#b43434]">{prod.name || 'Senza nome'}</span>
+                      <span className="ml-2 text-sm text-gray-500">{prod.category}</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="bg-yellow-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition"
+                      onClick={() => navigate(`/admin/prodotti/${prod.id}`)}
+                    >Modifica</Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
         <div className="mb-6">
           <p className="text-neutral-600">
             {productsLoading ? (
@@ -396,15 +485,17 @@ export default function ProductsPage() {
                   </span>
                 );
               }
+              // Usa la prima immagine dell'array images se esiste
+              const firstImage = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
               return (
                 <Card 
                   key={product.id}
                   className={`overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-neutral-200/50 bg-white/80 backdrop-blur-sm ${promo ? 'ring-2 ring-pink-300' : ''}`}
                 >
                   <div className="h-48 overflow-hidden relative" onClick={() => navigate(`/prodotto/${product.id}`)}>
-                    {product.image_url ? (
+                    {firstImage ? (
                       <img 
-                        src={product.image_url} 
+                        src={firstImage} 
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
@@ -464,7 +555,7 @@ export default function ProductsPage() {
                               id: product.id,
                               name: product.name,
                               price: finalPrice || product.price,
-                              image: product.image_url,
+                              image: Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : undefined,
                               quantity: 1,
                             },
                           });

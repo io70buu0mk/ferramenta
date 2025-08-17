@@ -20,7 +20,7 @@ type PromotionFormProps = {
   promotion?: Promotion | null;
 };
 
-export function PromotionForm({ open, onOpenChange, promotion }: PromotionFormProps) {
+export function PromotionForm({ open, onOpenChange, promotion, productId, hideProductSelector }: PromotionFormProps & { productId?: string, hideProductSelector?: boolean }) {
   const { createPromotion, updatePromotion } = usePromotions();
   const { products } = useProducts();
   const { toast } = useToast();
@@ -51,6 +51,10 @@ export function PromotionForm({ open, onOpenChange, promotion }: PromotionFormPr
         end_date: new Date(promotion.end_date).toISOString().slice(0, 16),
         is_active: promotion.is_active
       });
+      // Se productId è passato, seleziona il prodotto
+      if (productId) {
+        setSelectedProducts([productId]);
+      }
     } else {
       setFormData({
         name: '',
@@ -61,10 +65,15 @@ export function PromotionForm({ open, onOpenChange, promotion }: PromotionFormPr
         end_date: '',
         is_active: true
       });
+      // Se productId è passato, seleziona il prodotto
+      if (productId) {
+        setSelectedProducts([productId]);
+      } else {
+        setSelectedProducts([]);
+      }
     }
-    setSelectedProducts([]);
     setProductSearch('');
-  }, [promotion, open]);
+  }, [promotion, open, productId]);
 
   const activeProducts = products.filter(p => p.is_active);
   const filteredProducts = activeProducts.filter(p => 
@@ -311,104 +320,107 @@ export function PromotionForm({ open, onOpenChange, promotion }: PromotionFormPr
           </Card>
 
           {/* Selezione prodotti */}
-          <Card className="bg-white/60 backdrop-blur-sm border border-neutral-200/50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Package size={18} className="text-purple-500" />
-                  <h3 className="text-lg font-semibold text-neutral-800">Prodotti</h3>
-                </div>
-                <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-                  {selectedProducts.length} selezionati
-                </Badge>
-              </div>
-              
-              {!showProductSelector ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowProductSelector(true)}
-                  className="w-full bg-white/80 border-neutral-200 hover:bg-purple-50 hover:border-purple-300"
-                >
-                  <Package className="w-4 h-4 mr-2" />
-                  Seleziona Prodotti
-                </Button>
-              ) : (
-                <div className="space-y-4">
+          {!hideProductSelector ? (
+            <Card className="bg-white/60 backdrop-blur-sm border border-neutral-200/50">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Search size={16} className="text-neutral-400" />
-                    <Input
-                      value={productSearch}
-                      onChange={(e) => setProductSearch(e.target.value)}
-                      placeholder="Cerca prodotti..."
-                      className="bg-white/80 border-neutral-200 focus:border-purple-400 focus:ring-purple-400"
-                    />
+                    <Package size={18} className="text-purple-500" />
+                    <h3 className="text-lg font-semibold text-neutral-800">Prodotti</h3>
                   </div>
-                  
-                  <div className="max-h-60 overflow-y-auto border border-neutral-200 rounded-lg bg-white/50">
-                    {filteredProducts.length === 0 ? (
-                      <div className="p-4 text-center text-neutral-500">
-                        Nessun prodotto trovato
-                      </div>
-                    ) : (
-                      <div className="p-2 space-y-2">
-                        {filteredProducts.map(product => (
-                          <div
-                            key={product.id}
-                            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-neutral-50 border border-neutral-100"
-                          >
-                            <Checkbox
-                              id={`product-${product.id}`}
-                              checked={selectedProducts.includes(product.id)}
-                              onCheckedChange={() => handleProductToggle(product.id)}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <Label 
-                                htmlFor={`product-${product.id}`}
-                                className="text-sm font-medium text-neutral-700 cursor-pointer"
-                              >
-                                {product.name}
-                              </Label>
-                              <p className="text-xs text-neutral-500 truncate">
-                                €{product.price?.toFixed(2) || '0.00'} - Stock: {product.stock_quantity}
-                              </p>
-                            </div>
-                            {product.image_url && (
-                              <img 
-                                src={product.image_url} 
-                                alt={product.name}
-                                className="w-10 h-10 object-cover rounded-md border border-neutral-200"
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowProductSelector(false)}
-                      className="flex-1"
-                    >
-                      Chiudi
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        setSelectedProducts(filteredProducts.map(p => p.id));
-                      }}
-                      className="bg-purple-500 hover:bg-purple-600 text-white"
-                    >
-                      Seleziona Tutti
-                    </Button>
-                  </div>
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                    {selectedProducts.length} selezionati
+                  </Badge>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                
+                {!showProductSelector ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowProductSelector(true)}
+                    className="w-full bg-white/80 border-neutral-200 hover:bg-purple-50 hover:border-purple-300"
+                  >
+                    <Package className="w-4 h-4 mr-2" />
+                    Seleziona Prodotti
+                  </Button>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Search size={16} className="text-neutral-400" />
+                      <Input
+                        value={productSearch}
+                        onChange={(e) => setProductSearch(e.target.value)}
+                        placeholder="Cerca prodotti..."
+                        className="bg-white/80 border-neutral-200 focus:border-purple-400 focus:ring-purple-400"
+                      />
+                    </div>
+                    
+                    <div className="max-h-60 overflow-y-auto border border-neutral-200 rounded-lg bg-white/50">
+                      {filteredProducts.length === 0 ? (
+                        <div className="p-4 text-center text-neutral-500">
+                          Nessun prodotto trovato
+                        </div>
+                      ) : (
+                        <div className="p-2 space-y-2">
+                          {filteredProducts.map(product => (
+                            <div
+                              key={product.id}
+                              className="flex items-center space-x-3 p-3 rounded-lg hover:bg-neutral-50 border border-neutral-100"
+                            >
+                              <Checkbox
+                                id={`product-${product.id}`}
+                                checked={selectedProducts.includes(product.id)}
+                                onCheckedChange={() => handleProductToggle(product.id)}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <Label 
+                                  htmlFor={`product-${product.id}`}
+                                  className="text-sm font-medium text-neutral-700 cursor-pointer"
+                                >
+                                  {product.name}
+                                </Label>
+                                <p className="text-xs text-neutral-500 truncate">
+                                  €{product.price?.toFixed(2) || '0.00'} - Stock: {product.stock_quantity}
+                                </p>
+                              </div>
+                              {/* Mostra immagine solo se esiste in images */}
+                              {product.images && product.images.length > 0 && (
+                                <img 
+                                  src={product.images[0]}
+                                  alt={product.name}
+                                  className="w-10 h-10 object-cover rounded-md border border-neutral-200"
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowProductSelector(false)}
+                        className="flex-1"
+                      >
+                        Chiudi
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          setSelectedProducts(filteredProducts.map(p => p.id));
+                        }}
+                        className="bg-purple-500 hover:bg-purple-600 text-white"
+                      >
+                        Seleziona Tutti
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Separator className="my-6" />
 

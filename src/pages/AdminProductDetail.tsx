@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { arrayMove, SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { useRef } from 'react';
+import { ProductPromotionsManager } from '@/components/admin/ProductPromotionsManager';
 
 export default function AdminProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -28,9 +29,12 @@ export default function AdminProductDetail() {
     const fetchProduct = async () => {
       setLoading(true);
       const found = products.find((p) => p.id === id);
-  setProduct(found || null);
-  setFormData(found ? { ...found } : null);
-  setLoading(false);
+      console.log('[AdminProductDetail] id:', id);
+      console.log('[AdminProductDetail] products:', products);
+      console.log('[AdminProductDetail] found:', found);
+      setProduct(found || null);
+      setFormData(found ? { ...found } : null);
+      setLoading(false);
     };
     fetchProduct();
   }, [id, products]);
@@ -81,8 +85,11 @@ export default function AdminProductDetail() {
           onDelete={async () => { await deleteProduct(product.id); navigate('/admin/prodotti'); }}
           categories={categories.map((cat: any) => cat.name)}
           promotions={product.promotions || []}
-          onManagePromotions={() => toast({ title: 'Gestione promozioni', description: 'Funzione da implementare.' })}
+          onManagePromotions={() => {}}
         />
+        <div className="mt-12" id="product-promotions-section">
+          <ProductPromotionsManager productId={product.id} />
+        </div>
       </div>
     </div>
   );
