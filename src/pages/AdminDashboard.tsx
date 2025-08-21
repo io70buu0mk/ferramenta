@@ -1,54 +1,109 @@
+
+
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
-// Componente per mostrare le bozze prodotti
-// Componente per mostrare le bozze prodotti
-// ---
-// Versione unica e corretta della funzione BozzeProdottiList
-function BozzeProdottiList() {
-  const [draftProducts, setDraftProducts] = React.useState([]);
-  const [draftLoading, setDraftLoading] = React.useState(true);
+// Lista prodotti con tab/filtri per stato e badge colorati
+function ProductListUnified({ userId }: { userId: string }) {
+  const { products, loading: productsLoading, deleteProduct } = useProducts({ all: true });
   const navigate = useNavigate();
+  const [tab, setTab] = React.useState<'draft'|'published'|'archived'|'deleted'>('draft');
+  const [search, setSearch] = React.useState('');
 
-  React.useEffect(() => {
-    async function fetchDraftProducts() {
-      setDraftLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('status', 'draft')
-        .order('created_at', { ascending: false });
-      if (error) {
-        setDraftProducts([]);
-      } else {
-        setDraftProducts(data || []);
-      }
-      setDraftLoading(false);
+  const filtered = products.filter(p => {
+    const status = (p.status || 'draft');
+    const matchesTab = status === tab;
+    const matchesSearch = !search || (p.name?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase()));
+    return matchesTab && matchesSearch;
+  });
+
+  const badge = (status: string) => {
+    switch (status) {
+      case 'draft': return <span className="px-2 py-0.5 rounded text-xs font-semibold bg-yellow-100 text-yellow-800">Bozza</span>;
+      case 'published': return <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">Pubblicato</span>;
+      case 'archived': return <span className="px-2 py-0.5 rounded text-xs font-semibold bg-gray-200 text-gray-700">Archiviato</span>;
+      case 'deleted': return <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">Eliminato</span>;
+      default: return null;
     }
-    fetchDraftProducts();
-  }, []);
+  };
 
-  if (draftLoading) return <div className="text-gray-400">Caricamento bozze...</div>;
-  if (draftProducts.length === 0) return <div className="text-gray-400">Nessuna bozza presente.</div>;
   return (
-    <ul className="divide-y divide-gray-200">
-      {draftProducts.map(prod => (
-        <li key={prod.id} className="py-3 flex items-center justify-between">
-          <div>
-            <span className="font-bold text-[#b43434]">{prod.name || 'Senza nome'}</span>
-            <span className="ml-2 text-sm text-gray-500">{prod.category}</span>
+    <div className="relative w-full">
+      {/* Header sticky con tab grandi e floating action button */}
+      <div className="sticky top-0 z-10 bg-white/95 border-b border-neutral-200 pb-2 mb-6 flex flex-col gap-4">
+        <div className="flex items-center gap-6 pt-4">
+          <h1 className="text-3xl font-bold text-neutral-900 flex-1">Gestione Prodotti</h1>
+          <ProductCreateButton />
+        </div>
+        <div className="flex items-center gap-2 mt-2">
+          <button className={`px-5 py-2 rounded-full font-semibold text-base transition ${tab==='draft' ? 'bg-yellow-400 text-white shadow' : 'bg-neutral-100 text-neutral-700 hover:bg-yellow-100'}`} onClick={()=>setTab('draft')}>Bozze</button>
+          <button className={`px-5 py-2 rounded-full font-semibold text-base transition ${tab==='published' ? 'bg-green-500 text-white shadow' : 'bg-neutral-100 text-neutral-700 hover:bg-green-100'}`} onClick={()=>setTab('published')}>Pubblicati</button>
+          <button className={`px-5 py-2 rounded-full font-semibold text-base transition ${tab==='archived' ? 'bg-gray-400 text-white shadow' : 'bg-neutral-100 text-neutral-700 hover:bg-gray-100'}`} onClick={()=>setTab('archived')}>Archiviati</button>
+          <button className={`px-5 py-2 rounded-full font-semibold text-base transition ${tab==='deleted' ? 'bg-red-500 text-white shadow' : 'bg-neutral-100 text-neutral-700 hover:bg-red-100'}`} onClick={()=>setTab('deleted')}>Eliminati</button>
+          <div className="flex-1" />
+          <input
+            type="text"
+            placeholder="Cerca per nome o categoria..."
+            className="px-4 py-2 rounded-lg border border-neutral-200 bg-neutral-50 focus:ring-2 focus:ring-amber-400 text-base min-w-[220px]"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
+      {/* Lista prodotti a card */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+        {productsLoading ? (
+          <div className="col-span-full text-gray-400 text-center py-12">Caricamento prodotti...</div>
+        ) : filtered.length === 0 ? (
+          <div className="col-span-full text-gray-400 text-center py-12">
+            <div className="flex flex-col items-center gap-2">
+              <Package size={48} className="text-neutral-300 mb-2" />
+              <span className="text-lg font-medium">Nessun prodotto in questa sezione</span>
+              <span className="text-sm text-neutral-500">Aggiungi un nuovo prodotto per iniziare</span>
+            </div>
           </div>
-          <Button
-            size="sm"
-            className="bg-yellow-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition"
-            onClick={() => { navigate(`/admin/prodotto/${prod.id}`); }}
-          >Modifica</Button>
-        </li>
-      ))}
-    </ul>
+        ) : (
+          filtered.map(product => (
+            <div key={product.id} className="bg-white rounded-2xl shadow-md p-5 flex flex-col gap-3 border border-neutral-100 hover:shadow-lg transition">
+              <div className="flex gap-4 items-center">
+                {product.images && product.images[0] ? (
+                  <img src={product.images[0]} alt="img" className="w-20 h-20 object-cover rounded-xl border" />
+                ) : (
+                  <div className="w-20 h-20 flex items-center justify-center rounded-xl border bg-neutral-100 text-neutral-300">
+                    <Package size={36} />
+                  </div>
+                )}
+                <div className="flex flex-col gap-1 flex-1 min-w-0">
+                  <span className="font-bold text-lg text-neutral-900 truncate">{product.name || 'Senza nome'}</span>
+                  <span className="text-sm text-neutral-500 truncate">{product.category}</span>
+                  {badge(product.status || 'draft')}
+                </div>
+                <div className="flex flex-col gap-2 items-end">
+                  <Button size="sm" variant="outline" onClick={()=>navigate(`/admin/${userId}/products/edit/${product.id}`)}>
+                    <Edit size={16} />
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={()=>deleteProduct(product.id)}>
+                    <Trash size={16} />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      {/* Floating action button mobile */}
+      <button
+        className="fixed bottom-8 right-8 z-50 bg-yellow-400 hover:bg-yellow-500 text-white rounded-full shadow-lg p-4 md:hidden"
+        onClick={() => document.querySelector('button:contains("Nuovo prodotto")')?.click()}
+        aria-label="Nuovo prodotto"
+      >
+        <Plus size={28} />
+      </button>
+    </div>
   );
 }
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 // importazione duplicata rimossa
@@ -91,7 +146,7 @@ import PurchasedProductsAdminSection from "@/components/admin/PurchasedProductsA
 import { AdvancedAnalytics } from "@/components/admin/AdvancedAnalytics";
 import { CommunicationCenter } from "@/components/admin/CommunicationCenter";
 
-import ProductForm from "@/components/admin/ProductForm";
+import { ProductCreateButton } from "@/components/products/ProductCreateButton";
 import { PromotionsManager } from "@/components/admin/PromotionsManager";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { formatDistanceToNow } from "date-fns";
@@ -124,7 +179,8 @@ export default function AdminDashboard() {
   const [testTitle, setTestTitle] = useState('');
   // Stato per lista admin con token FCM
   const [adminList, setAdminList] = useState([]);
-  const { userId } = useParams();
+  const { userId, section } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -133,12 +189,22 @@ export default function AdminDashboard() {
   const { products, loading: productsLoading, deleteProduct } = useProducts();
   const { messages, loading: messagesLoading } = useMessages();
   const { stats, loading: statsLoading } = useAdminStats();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  // Determina la sezione attiva dall'URL, default "dashboard"
+  const sectionFromUrl = section || location.pathname.split('/')[3] || "dashboard";
+  const [activeTab, setActiveTab] = useState(sectionFromUrl);
   const [productFormOpen, setProductFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
+  // Sincronizza activeTab con l'URL
+  useEffect(() => {
+    if (sectionFromUrl !== activeTab) {
+      setActiveTab(sectionFromUrl);
+    }
+    // eslint-disable-next-line
+  }, [sectionFromUrl]);
+
   // DEBUG: logga lo stato di caricamento, profilo e ruolo
-  console.log('DEBUG AdminDashboard:', { loading, profile, user, isAdmin: isAdmin() });
+  console.log('DEBUG AdminDashboard:', { loading, profile, user, isAdmin: isAdmin(), activeTab, sectionFromUrl });
 
   // Stato e logica per configurazione telefono notifiche e invio SMS di prova
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -296,7 +362,12 @@ export default function AdminDashboard() {
         <div className="hidden lg:block">
           <AdminSidebar
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            onTabChange={(tab) => {
+              setActiveTab(tab);
+              if (userId) {
+                navigate(`/admin/${userId}/${tab}`);
+              }
+            }}
             profile={profile}
             userId={userId || ''}
             onLogout={handleLogout}
@@ -386,41 +457,50 @@ export default function AdminDashboard() {
 
           {/* Main Content */}
           <div className="flex-1 px-3 md:px-6 lg:px-6 py-4 md:py-8">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
+            <Tabs
+              value={activeTab}
+              onValueChange={tab => {
+                setActiveTab(tab);
+                if (userId) {
+                  navigate(`/admin/${userId}/${tab}`);
+                }
+              }}
+              className="space-y-4 md:space-y-6"
+            >
               {/* Mobile Tab Navigation */}
               <div className="lg:hidden">
                 <TabsList className="grid w-full grid-cols-3 md:grid-cols-7 bg-white/80 backdrop-blur-sm border border-neutral-200/50 h-auto p-1">
-                  <TabsTrigger value="dashboard" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm">
+                  <TabsTrigger value="dashboard" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm" onClick={() => userId && navigate(`/admin/${userId}/dashboard`)}>
                     <Activity size={14} className="md:w-4 md:h-4" />
                     <span className="hidden sm:inline">Dashboard</span>
                     <span className="sm:hidden">Home</span>
                   </TabsTrigger>
-                  <TabsTrigger value="products" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm">
+                  <TabsTrigger value="products" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm" onClick={() => userId && navigate(`/admin/${userId}/products`)}>
                     <Package size={14} className="md:w-4 md:h-4" />
                     <span className="hidden sm:inline">Prodotti</span>
                     <span className="sm:hidden">Prod</span>
                   </TabsTrigger>
-                  <TabsTrigger value="promotions" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm">
+                  <TabsTrigger value="promotions" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm" onClick={() => userId && navigate(`/admin/${userId}/promotions`)}>
                     <Percent size={14} className="md:w-4 md:h-4" />
                     <span className="hidden sm:inline">Promozioni</span>
                     <span className="sm:hidden">Promo</span>
                   </TabsTrigger>
-                  <TabsTrigger value="users" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm">
+                  <TabsTrigger value="users" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm" onClick={() => userId && navigate(`/admin/${userId}/users`)}>
                     <Users size={14} className="md:w-4 md:h-4" />
                     <span className="hidden sm:inline">Utenti</span>
                     <span className="sm:hidden">User</span>
                   </TabsTrigger>
-                  <TabsTrigger value="communication" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm">
+                  <TabsTrigger value="communication" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm" onClick={() => userId && navigate(`/admin/${userId}/communication`)}>
                     <MessageSquare size={14} className="md:w-4 md:h-4" />
                     <span className="hidden sm:inline">Comunicazioni</span>
                     <span className="sm:hidden">Chat</span>
                   </TabsTrigger>
-                  <TabsTrigger value="analytics" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm">
+                  <TabsTrigger value="analytics" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm" onClick={() => userId && navigate(`/admin/${userId}/analytics`)}>
                     <BarChart3 size={14} className="md:w-4 md:h-4" />
                     <span className="hidden sm:inline">Analytics</span>
                     <span className="sm:hidden">Stats</span>
                   </TabsTrigger>
-                  <TabsTrigger value="settings" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm">
+                  <TabsTrigger value="settings" className="flex items-center gap-1 md:gap-2 py-2 text-xs md:text-sm" onClick={() => userId && navigate(`/admin/${userId}/settings`)}>
                     <Settings size={14} className="md:w-4 md:h-4" />
                     <span className="hidden sm:inline">Impostazioni</span>
                     <span className="sm:hidden">Set</span>
@@ -430,6 +510,11 @@ export default function AdminDashboard() {
 
               {/* Dashboard Tab */}
               <TabsContent value="dashboard" className="space-y-4 md:space-y-6">
+                {/* ...dashboard info... */}
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold mb-2">Gestione Prodotti</h2>
+                  <ProductListUnified userId={userId || user?.id || ''} />
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
                   <Card className="bg-white/80 backdrop-blur-sm border border-neutral-200/50">
                     <CardHeader className="pb-2">
@@ -580,22 +665,11 @@ export default function AdminDashboard() {
               aria-label="Chiudi bozze"
             >×</button>
             <h2 className="text-xl font-bold text-[#b43434] mb-4">Bozze prodotti</h2>
-            <BozzeProdottiList />
+            <BozzeProdottiList userId={userId || user?.id || ''} />
           </div>
         </div>
       )}
-                    <Button 
-                      onClick={() => navigate('/admin/prodotto/nuovo')}
-                      size="sm"
-                      className="flex items-center gap-1 md:gap-2 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 flex-shrink-0"
-                    >
-                      <Plus size={14} className="md:w-4 md:h-4" />
-                      <span className="hidden sm:inline">Nuovo</span>
-                      <span className="sm:hidden">+</span>
-                    </Button>
-
-
-
+                    <ProductCreateButton />
 {/* ---
 // Versione unica e corretta della funzione BozzeProdottiList
 // (le importazioni sono già presenti in cima al file)
@@ -670,64 +744,73 @@ function BozzeProdottiList() {
                         <div className="text-center py-12 text-neutral-500">Caricamento prodotti...</div>
                       ) : products.length > 0 ? (
                         <div className="grid gap-4">
-                          {products.map((product) => (
-                            <div
-                              key={product.id}
-                              className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg cursor-pointer hover:bg-amber-50 transition"
-                              onClick={() => navigate(`/admin/prodotto/${product.id}`)}
-                            >
-                              <div className="flex items-center gap-4 flex-1">
-                                {/* Immagine prodotto o icona placeholder */}
-                                {product.images && product.images.length > 0 ? (
-                                  <img
-                                    src={product.images[0]}
-                                    alt={product.name}
-                                    className="w-14 h-14 object-cover rounded-lg border border-neutral-200 bg-white"
-                                    onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = ''; }}
-                                  />
-                                ) : (
-                                  <div className="w-14 h-14 flex items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50">
-                                    <Package size={32} className="text-neutral-300" />
+                          {products.map((product) => {
+                            const safeStatus = product.status || 'draft';
+                            return (
+                              <div
+                                key={product.id}
+                                className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg cursor-pointer hover:bg-amber-50 transition"
+                                onClick={() => navigate(`/admin/${userId || user?.id || ''}/products/edit/${product.id}`)}
+                              >
+                                <div className="flex items-center gap-4 flex-1">
+                                  {/* Immagine prodotto o icona placeholder */}
+                                  {product.images && product.images.length > 0 ? (
+                                    <img
+                                      src={product.images[0]}
+                                      alt={product.name}
+                                      className="w-14 h-14 object-cover rounded-lg border border-neutral-200 bg-white"
+                                      onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = ''; }}
+                                    />
+                                  ) : (
+                                    <div className="w-14 h-14 flex items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50">
+                                      <Package size={32} className="text-neutral-300" />
+                                    </div>
+                                  )}
+                                  <div className="flex flex-col gap-1">
+                                    <h3 className="font-medium text-neutral-800">{product.name}</h3>
+                                    <p className="text-sm text-neutral-600">{product.category}</p>
+                                    <p className="text-sm text-neutral-500">
+                                      Prezzo: €{product.price} - Stock: {product.stock_quantity}
+                                    </p>
+                                    <span className={`px-2 py-0.5 rounded text-xs font-semibold mt-1 w-fit
+                                      ${safeStatus === 'draft' ? 'bg-yellow-100 text-yellow-800' : ''}
+                                      ${safeStatus === 'published' ? 'bg-green-100 text-green-800' : ''}
+                                      ${safeStatus === 'archived' ? 'bg-gray-200 text-gray-700' : ''}
+                                      ${safeStatus === 'deleted' ? 'bg-red-100 text-red-700' : ''}
+                                    `}>
+                                      {safeStatus === 'draft' && 'Bozza'}
+                                      {safeStatus === 'published' && 'Pubblicato'}
+                                      {safeStatus === 'archived' && 'Archiviato'}
+                                      {safeStatus === 'deleted' && 'Eliminato'}
+                                    </span>
                                   </div>
-                                )}
-                                <div>
-                                  <h3 className="font-medium text-neutral-800">{product.name}</h3>
-                                  <p className="text-sm text-neutral-600">{product.category}</p>
-                                  <p className="text-sm text-neutral-500">
-                                    Prezzo: €{product.price} - Stock: {product.stock_quantity}
-                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/admin/${userId || user?.id || ''}/products/edit/${product.id}`)}
+                                  >
+                                    <Edit size={16} />
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => deleteProduct(product.id)}
+                                  >
+                                    <Trash size={16} />
+                                  </Button>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => navigate(`/admin/prodotto/${product.id}`)}
-                                >
-                                  <Edit size={16} />
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => deleteProduct(product.id)}
-                                >
-                                  <Trash size={16} />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="text-center py-12 text-neutral-500">
                           <Package size={48} className="mx-auto mb-4 text-neutral-300" />
                           <p className="text-lg font-medium mb-2">Nessun prodotto trovato</p>
                           <p className="text-sm">Inizia aggiungendo il tuo primo prodotto</p>
-                          <Button 
-                            onClick={() => navigate('/admin/prodotto/nuovo')}
-                            className="mt-4 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600"
-                          >
-                            Aggiungi Prodotto
-                          </Button>
+                          <ProductCreateButton />
                         </div>
                       )}
                     </div>

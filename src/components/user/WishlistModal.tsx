@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { getSignedImageUrl } from '@/integrations/supabase/imageUpload';
 import { useCart } from "../../hooks/useCart";
 import { usePublicProducts } from "../../hooks/usePublicProducts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -13,6 +14,29 @@ const WishlistModal: React.FC<WishlistModalProps> = ({ open, onOpenChange }) => 
   const { wishlist, wishlistDispatch, dispatch } = useCart();
   const { products } = usePublicProducts ? usePublicProducts() : { products: [] };
   const wishlistProducts = products.filter((p: any) => wishlist.items.includes(p.id));
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchUrls() {
+      const map: Record<string, string> = {};
+      for (const p of wishlistProducts) {
+        const filePath = Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null;
+        if (filePath) {
+          try {
+            map[p.id] = await getSignedImageUrl(filePath);
+          } catch {
+            map[p.id] = '/placeholder.svg';
+          }
+        } else {
+          map[p.id] = '/placeholder.svg';
+        }
+      }
+      if (isMounted) setSignedUrls(map);
+    }
+    fetchUrls();
+    return () => { isMounted = false; };
+  }, [wishlistProducts]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -29,7 +53,12 @@ const WishlistModal: React.FC<WishlistModalProps> = ({ open, onOpenChange }) => 
           )}
           {wishlistProducts.map((p: any) => (
             <li key={p.id} className="py-4 flex items-center gap-4 group">
-              {p.image_url && <img src={p.image_url} alt={p.name} className="w-16 h-16 rounded object-cover" />}
+              <img
+                src={signedUrls[p.id] || '/placeholder.svg'}
+                alt={p.name}
+                className="w-16 h-16 rounded object-cover"
+                onError={e => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
+              />
               <span className="flex-1 font-medium text-lg">{p.name}</span>
               <span className="text-base text-neutral-500">€{p.price?.toFixed(2)}</span>
               <div className="flex gap-1 items-center ml-2">
@@ -40,7 +69,7 @@ const WishlistModal: React.FC<WishlistModalProps> = ({ open, onOpenChange }) => 
                 <button
                   className="p-1 rounded border border-[#b43434] text-[#b43434] hover:bg-[#f8e8e3] transition flex items-center justify-center"
                   title="Aggiungi al carrello"
-                  onClick={() => dispatch({ type: 'ADD_ITEM', product: { id: p.id, name: p.name, price: p.price, image: p.image_url, quantity: 1 } })}
+                  onClick={() => dispatch({ type: 'ADD_ITEM', product: { id: p.id, name: p.name, price: p.price, image: signedUrls[p.id], quantity: 1 } })}
                 >
                   <ShoppingCart size={20} />
                 </button>

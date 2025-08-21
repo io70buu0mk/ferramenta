@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useCart } from "../../hooks/useCart";
+import { getSignedImageUrl } from "@/integrations/supabase/imageUpload";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShoppingCart } from "lucide-react";
 
@@ -11,6 +12,30 @@ interface CartModalProps {
 const CartModal: React.FC<CartModalProps> = ({ open, onOpenChange }) => {
   const { state, dispatch } = useCart();
   const items = state.items;
+  const [signedUrls, setSignedUrls] = useState<{ [id: string]: string }>({});
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchUrls() {
+      const urls: { [id: string]: string } = {};
+      await Promise.all(items.map(async (item) => {
+        if (item.image && !item.image.startsWith("http")) {
+          try {
+            urls[item.id] = await getSignedImageUrl(item.image);
+          } catch {
+            urls[item.id] = "/placeholder.svg";
+          }
+        } else if (item.image) {
+          urls[item.id] = item.image;
+        } else {
+          urls[item.id] = "/placeholder.svg";
+        }
+      }));
+      if (isMounted) setSignedUrls(urls);
+    }
+    fetchUrls();
+    return () => { isMounted = false; };
+  }, [items]);
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handleRemove = (id: string) => {
@@ -32,7 +57,12 @@ const CartModal: React.FC<CartModalProps> = ({ open, onOpenChange }) => {
           )}
           {items.map(item => (
             <li key={item.id} className="py-4 flex items-center gap-4 group">
-              {item.image && <img src={item.image} alt={item.name} className="w-16 h-16 rounded object-cover border" />}
+              <img
+                src={signedUrls[item.id] || "/placeholder.svg"}
+                alt={item.name}
+                className="w-16 h-16 rounded object-cover border"
+                onError={e => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
+              />
               <span className="flex-1 font-medium text-lg">{item.name}</span>
               <span className="text-base text-neutral-500">€{item.price.toFixed(2)}</span>
               <span className="text-xs text-neutral-500 ml-2">x{item.quantity}</span>

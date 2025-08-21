@@ -1,3 +1,5 @@
+import AdminProductEdit from "./pages/AdminProductEdit";
+          <Route path="/admin/:userId/products/edit/:productId" element={<AdminProductEdit />} />
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import OrderReviewPage from "./pages/OrderReviewPage";
@@ -47,6 +49,7 @@ const App = () => {
           <Route path="/cliente/:userId" element={<ClienteAreaNew />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/:userId" element={<AdminDashboard />} />
+          <Route path="/admin/:userId/:section" element={<AdminDashboard />} />
           <Route path="/admin-old" element={<AdminArea />} />
           <Route path="/admin/prodotto/:id" element={<AdminProductDetail />} />
           <Route path="/admin/prodotto/nuovo" element={<AdminProductNew />} />

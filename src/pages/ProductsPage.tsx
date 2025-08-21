@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { getSignedImageUrl } from '@/integrations/supabase/imageUpload';
 import { useNavigate } from "react-router-dom";
 import { useCart } from '../hooks/useCart';
 import { Heart } from 'lucide-react';
@@ -19,6 +20,7 @@ import {
 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { usePublicProducts } from "@/hooks/usePublicProducts";
+import { useProducts } from "@/hooks/useProducts";
 import { usePromotions } from "@/hooks/usePromotions";
 import { useEffect as useEffectReact } from "react";
 import { Button } from "@/components/ui/button";
@@ -28,30 +30,89 @@ import CartModalTrigger from "@/components/user/CartModalTrigger";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function ProductsPage() {
-  const [showDraftModal, setShowDraftModal] = useState(false);
+  const handleAddProduct = async () => {
+    // Crea una bozza con nome e stato di default
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert('Devi essere autenticato per aggiungere un prodotto');
+      return;
+    }
+    // Genera nome bozza
+    let productName = '';
+    const { data: draftProducts } = await supabase
+      .from('products')
+      .select('name')
+      .ilike('name', 'Bozza%');
+    let nextDraftNum = 0;
+    if (draftProducts && Array.isArray(draftProducts)) {
+      const draftNums = draftProducts
+        .map(p => p.name)
+        .filter(n => n && n.startsWith('Bozza'))
+        .map(n => {
+          const match = n.match(/Bozza (\d+)/);
+          return match ? parseInt(match[1], 10) : null;
+        })
+        .filter(n => n !== null);
+      nextDraftNum = draftNums.length > 0 ? Math.max(...draftNums) + 1 : 0;
+    }
+    productName = `Bozza ${nextDraftNum}`;
+    // Inserisci la bozza
+    const { data, error } = await supabase
+      .from('products')
+      .insert([{
+        name: productName,
+        status: 'draft',
+        is_active: false,
+        images: [],
+        price: 0,
+        category: '',
+        description: '',
+        stock_quantity: 0,
+        created_by: user.id
+      }])
+      .select()
+      .single();
+    if (error || !data) {
+      alert('Errore nella creazione della bozza');
+      return;
+    }
+    // Naviga subito alla pagina di modifica prodotto
+    navigate(`/admin/prodotti/${data.id}`);
+  };
   const [user, setUser] = useState<User | null>(null);
   const { role, loading: roleLoading, isAdmin } = useUserRole(user);
-  // Stato per le bozze prodotti
-  const [draftProducts, setDraftProducts] = useState([]);
-  const [draftLoading, setDraftLoading] = useState(true);
+  // Stato per signed URL delle immagini prodotto
+  const [signedUrlsMap, setSignedUrlsMap] = useState<Record<string, string>>(/* productId -> signedUrl */{});
+
+  // Recupera signed URL per la prima immagine di ogni prodotto
+  const { products, loading: productsLoading } = usePublicProducts();
   useEffect(() => {
-    async function fetchDraftProducts() {
-      setDraftLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('status', 'draft')
-        .order('created_at', { ascending: false });
-      if (error) {
-        setDraftProducts([]);
-      } else {
-        setDraftProducts(data || []);
+    let isMounted = true;
+    async function fetchUrls() {
+      if (!products || products.length === 0) {
+        setSignedUrlsMap({});
+        return;
       }
-      setDraftLoading(false);
+      const map: Record<string, string> = {};
+      for (const product of products) {
+        const filePath = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
+        if (filePath) {
+          try {
+            map[product.id] = await getSignedImageUrl(filePath);
+          } catch {
+            map[product.id] = '/placeholder.svg';
+          }
+        } else {
+          map[product.id] = '/placeholder.svg';
+        }
+      }
+      if (isMounted) setSignedUrlsMap(map);
     }
-    const isAdminValue = isAdmin();
-    if (isAdminValue) fetchDraftProducts();
-  }, [isAdmin]);
+    fetchUrls();
+    return () => { isMounted = false; };
+  }, [products]);
+
+  // Le bozze sono incluse nella lista principale dei prodotti
   const { dispatch, wishlist, wishlistDispatch } = useCart();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -59,7 +120,7 @@ export default function ProductsPage() {
   const [priceRange, setPriceRange] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name");
   const [showFilters, setShowFilters] = useState(false);
-  const { products, loading: productsLoading } = usePublicProducts();
+  // ...existing code...
   const { promotions, loading: promotionsLoading, refetch, getPromotionProducts } = usePromotions();
   const [promoOnly, setPromoOnly] = useState(false);
   const [promotionProducts, setPromotionProducts] = useState<{product_id: string, promotion_id: string}[]>([]);
@@ -120,7 +181,7 @@ export default function ProductsPage() {
     return uniqueCategories;
   }, [products]);
 
-  // Filter and sort products
+  // Filter and sort products: bozze sempre in cima
   const filteredProducts = React.useMemo(() => {
     let filtered = products.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -146,21 +207,26 @@ export default function ProductsPage() {
       const matchesPromo = !promoOnly || promoProductIds.has(product.id);
       return matchesSearch && matchesCategory && matchesPrice && matchesPromo;
     });
-    // Sort products
-    switch (sortBy) {
-      case "name":
-        filtered.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case "price_asc":
-        filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
-        break;
-      case "price_desc":
-        filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
-        break;
-      case "newest":
-        filtered.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-    }
+    // Ordina: bozze in cima, poi ordinamento scelto
+    filtered.sort((a, b) => {
+      const aIsDraft = a.status === 'draft';
+      const bIsDraft = b.status === 'draft';
+      if (aIsDraft && !bIsDraft) return -1;
+      if (!aIsDraft && bIsDraft) return 1;
+      // Se entrambi sono bozze o entrambi non lo sono, ordina normalmente
+      switch (sortBy) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "price_asc":
+          return (a.price || 0) - (b.price || 0);
+        case "price_desc":
+          return (b.price || 0) - (a.price || 0);
+        case "newest":
+          return a.name.localeCompare(b.name);
+        default:
+          return 0;
+      }
+    });
     return filtered;
   }, [products, searchTerm, selectedCategory, priceRange, sortBy, promoOnly, promoProductIds]);
 
@@ -175,13 +241,6 @@ export default function ProductsPage() {
   <div className="min-h-screen bg-gradient-to-br from-white via-neutral-50 to-neutral-100 px-2 sm:px-0">
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-xl border-b border-neutral-200/50 sticky top-0 z-50">
-        <div className="flex justify-end mb-2">
-          <Button
-            size="sm"
-            className="bg-yellow-400 text-white font-semibold rounded-lg hover:bg-yellow-500 transition"
-            onClick={() => setShowDraftModal(true)}
-          >Gestisci bozze</Button>
-        </div>
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -282,7 +341,7 @@ export default function ProductsPage() {
                 className="pl-10 h-12 border-neutral-200 focus:ring-amber-400 focus:border-amber-400"
               />
             </div>
-            
+            {/* Pulsante Gestisci bozze rimosso definitivamente */}
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
@@ -293,6 +352,13 @@ export default function ProductsPage() {
               {(selectedCategory !== "all" || priceRange !== "all") && (
                 <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
               )}
+            </Button>
+            <Button
+              variant="default"
+              className="bg-yellow-400 text-white font-semibold rounded-lg hover:bg-yellow-500 transition"
+              onClick={handleAddProduct}
+            >
+              + Nuovo
             </Button>
           </div>
 
@@ -377,68 +443,7 @@ export default function ProductsPage() {
           )}
         </div>
 
-        {/* Results Summary */}
-      {/* Modal gestione bozze prodotti */}
-  {showDraftModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 min-w-[340px] max-w-[90vw] border-2 border-yellow-300 relative">
-            <button
-              className="absolute top-4 right-4 text-2xl text-yellow-500 hover:text-red-500 font-bold bg-white rounded-full border border-yellow-200 w-10 h-10 flex items-center justify-center shadow"
-              onClick={() => setShowDraftModal(false)}
-              aria-label="Chiudi bozze"
-            >×</button>
-            <h2 className="text-xl font-bold text-[#b43434] mb-4">Bozze prodotti</h2>
-            {draftLoading ? (
-              <div className="text-gray-400">Caricamento bozze...</div>
-            ) : draftProducts.length === 0 ? (
-              <div className="text-gray-400">Nessuna bozza presente.</div>
-            ) : (
-              <ul className="divide-y divide-gray-200">
-                {draftProducts.map(prod => (
-                  <li key={prod.id} className="py-3 flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-[#b43434]">{prod.name || 'Senza nome'}</span>
-                      <span className="ml-2 text-sm text-gray-500">{prod.category}</span>
-                    </div>
-                    <Button
-                      size="sm"
-                      className="bg-yellow-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition"
-                      onClick={() => { setShowDraftModal(false); navigate(`/admin/prodotti/${prod.id}`); }}
-                    >Modifica</Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      )}
-        {/* Sezione bozze prodotti per admin */}
-        {isAdmin() && (
-          <div className="mb-10">
-            <h2 className="text-lg font-bold text-[#b43434] mb-2">Bozze prodotti</h2>
-            {draftLoading ? (
-              <div className="text-gray-400">Caricamento bozze...</div>
-            ) : draftProducts.length === 0 ? (
-              <div className="text-gray-400">Nessuna bozza presente.</div>
-            ) : (
-              <ul className="divide-y divide-gray-200">
-                {draftProducts.map(prod => (
-                  <li key={prod.id} className="py-3 flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-[#b43434]">{prod.name || 'Senza nome'}</span>
-                      <span className="ml-2 text-sm text-gray-500">{prod.category}</span>
-                    </div>
-                    <Button
-                      size="sm"
-                      className="bg-yellow-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition"
-                      onClick={() => navigate(`/admin/prodotti/${prod.id}`)}
-                    >Modifica</Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+  {/* Le bozze sono ora solo nella lista principale, sempre in cima */}
         <div className="mb-6">
           <p className="text-neutral-600">
             {productsLoading ? (
@@ -487,22 +492,22 @@ export default function ProductsPage() {
               }
               // Usa la prima immagine dell'array images se esiste
               const firstImage = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
+              // Bordo arancione per le bozze
+              const isDraft = product.status === 'draft';
               return (
                 <Card 
                   key={product.id}
-                  className={`overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-neutral-200/50 bg-white/80 backdrop-blur-sm ${promo ? 'ring-2 ring-pink-300' : ''}`}
+                  className={`overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-neutral-200/50 bg-white/80 backdrop-blur-sm ${promo ? 'ring-2 ring-pink-300' : ''} ${isDraft ? 'ring-2 ring-orange-400' : ''}`}
                 >
                   <div className="h-48 overflow-hidden relative" onClick={() => navigate(`/prodotto/${product.id}`)}>
-                    {firstImage ? (
-                      <img 
-                        src={firstImage} 
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-neutral-100 flex items-center justify-center">
-                        <Package size={32} className="text-neutral-400" />
-                      </div>
+                    <img
+                      src={signedUrlsMap[product.id] || '/placeholder.svg'}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={e => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
+                    />
+                    {isDraft && (
+                      <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full font-bold border border-orange-400">BOZZA</div>
                     )}
                     {badge && (
                       <div className="absolute top-2 right-2 z-10">{badge}</div>

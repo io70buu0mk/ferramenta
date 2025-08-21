@@ -29,25 +29,7 @@ export default function AdminArea() {
     return () => listener?.subscription.unsubscribe();
   }, []);
 
-  const [products, setProducts] = useState([]);
-  const [productsLoading, setProductsLoading] = useState(true);
-  useEffect(() => {
-    async function fetchDraftProducts() {
-      setProductsLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('status', 'draft')
-        .order('created_at', { ascending: false });
-      if (error) {
-        setProducts([]);
-      } else {
-        setProducts(data || []);
-      }
-      setProductsLoading(false);
-    }
-    fetchDraftProducts();
-  }, []);
+  // Rimossa la logica delle bozze: la gestione prodotti avviene ora solo nella pagina principale
 
   if (loading) return null;
   if (!profile) return null;
@@ -58,27 +40,7 @@ export default function AdminArea() {
         <div className="mb-2 text-sm text-gray-500">Area Amministratore</div>
         <div className="mb-4 text-xl font-bold text-[#b43434]">{profile.email}</div>
         <div className="mb-6 text-gray-800">
-          Benvenuto! Qui potrai gestire prodotti e ordini.<br />
-          <span className="font-semibold">Bozze prodotti:</span>
-        </div>
-        <div className="mb-6">
-          {productsLoading ? (
-            <div className="text-gray-400">Caricamento bozze...</div>
-          ) : products.length === 0 ? (
-            <div className="text-gray-400">Nessuna bozza presente.</div>
-          ) : (
-            <ul className="divide-y divide-gray-200">
-              {products.map(prod => (
-                <li key={prod.id} className="py-3 flex items-center justify-between">
-                  <div>
-                    <span className="font-bold text-[#b43434]">{prod.name || 'Senza nome'}</span>
-                    <span className="ml-2 text-sm text-gray-500">{prod.category}</span>
-                  </div>
-                  <a href={`/admin/prodotti/${prod.id}`} className="bg-yellow-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition">Modifica</a>
-                </li>
-              ))}
-            </ul>
-          )}
+          Benvenuto! Qui potrai gestire prodotti e ordini.
         </div>
         <div className="mt-6 flex justify-between">
           <a href="/" className="text-[#b43434] underline">Home</a>

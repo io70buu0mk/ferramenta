@@ -15,7 +15,7 @@ import { ProductPromotionsManager } from '@/components/admin/ProductPromotionsMa
 export default function AdminProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { products, updateProduct, deleteProduct } = useProducts();
+  const { products, updateProduct, deleteProduct } = useProducts({ all: true });
   const { categories } = useCategories();
   const { toast } = useToast();
   const [product, setProduct] = useState<any | null>(null);

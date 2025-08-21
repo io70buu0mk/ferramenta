@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getSignedImageUrl } from '@/integrations/supabase/imageUpload';
 import { useCart } from '../hooks/useCart';
 import { Heart } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -10,12 +11,35 @@ import { useProductPromotions } from '@/hooks/useProductPromotions';
 
 export default function ProductDetail() {
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+  const [signedUrls, setSignedUrls] = useState<string[]>([]);
   const { dispatch, wishlist, wishlistDispatch } = useCart();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<PublicProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const { products, productPromotionMap } = useProductPromotions();
+  // Recupera signed URL per tutte le immagini
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchUrls() {
+      if (!product?.images || product.images.length === 0) {
+        setSignedUrls([]);
+        return;
+      }
+      const urls: string[] = [];
+      for (const filePath of product.images) {
+        try {
+          const url = await getSignedImageUrl(filePath);
+          urls.push(url);
+        } catch {
+          urls.push('/placeholder.svg');
+        }
+      }
+      if (isMounted) setSignedUrls(urls);
+    }
+    fetchUrls();
+    return () => { isMounted = false; };
+  }, [product?.images]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -137,26 +161,21 @@ export default function ProductDetail() {
           {/* Product Image stile Amazon */}
           <div className="space-y-4">
             <div className="aspect-square bg-muted rounded-2xl overflow-hidden relative flex items-center justify-center">
-              {product.images && product.images.length > 0 ? (
-                <img
-                  src={product.images[selectedImageIdx]}
-                  alt={`${product.name} immagine principale`}
-                  className="w-full h-full object-contain rounded-2xl transition-all duration-300 shadow-lg"
-                  style={{ maxHeight: '420px', background: '#fff' }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                  <Package size={64} />
-                </div>
-              )}
+              <img
+                src={signedUrls.length > 0 ? signedUrls[selectedImageIdx] || signedUrls[0] : '/placeholder.svg'}
+                alt={`${product.name} immagine principale`}
+                className="w-full h-full object-contain rounded-2xl transition-all duration-300 shadow-lg"
+                style={{ maxHeight: '420px', background: '#fff' }}
+                onError={e => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
+              />
               {badge && (
                 <div className="absolute top-2 right-2 z-10">{badge}</div>
               )}
             </div>
             {/* Thumbnails scrollabili */}
-            {product.images && product.images.length > 1 && (
+            {signedUrls.length > 1 && (
               <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
-                {product.images.map((img, idx) => (
+                {signedUrls.map((url, idx) => (
                   <button
                     key={idx}
                     type="button"
@@ -165,10 +184,11 @@ export default function ProductDetail() {
                     style={{ background: '#fff' }}
                   >
                     <img
-                      src={img}
-                      alt={`${product.name} thumbnail ${idx+1}`}
+                      src={url || '/placeholder.svg'}
+                      alt={`${product?.name} thumbnail ${idx+1}`}
                       className="w-full h-full object-cover"
                       style={{ transition: 'transform 0.2s' }}
+                      onError={e => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
                     />
                   </button>
                 ))}

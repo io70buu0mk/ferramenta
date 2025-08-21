@@ -39,7 +39,7 @@ interface AdminSidebarProps {
   onNavigateCliente: () => void;
 }
 
-const adminMenuItems = [
+export const adminMenuItems = [
   { 
     id: "dashboard", 
     title: "Dashboard", 

@@ -1,4 +1,6 @@
+
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useToast } from '@/hooks/use-toast';
@@ -6,9 +8,39 @@ import ProductForm from '@/components/admin/ProductForm';
 
 export default function AdminProductNew() {
   const navigate = useNavigate();
-  const { createProduct } = useProducts();
+  const { createProduct, updateProduct } = useProducts();
   const { categories } = useCategories();
   const { toast } = useToast();
+  const [draft, setDraft] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    async function createDraft() {
+      try {
+        const newDraft = await createProduct({
+          name: '',
+          description: '',
+          price: 0,
+          category: '',
+          images: [],
+          stock_quantity: 0,
+          is_active: false,
+        });
+        if (mounted) setDraft(newDraft);
+      } catch (err) {
+        toast({ title: 'Errore', description: 'Impossibile creare la bozza', variant: 'destructive' });
+        navigate('/admin');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    createDraft();
+    return () => { mounted = false; };
+  }, []);
+
+  if (loading) return <div className="text-center py-20">Caricamento bozza prodotto...</div>;
+  if (!draft) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -19,16 +51,17 @@ export default function AdminProductNew() {
       </div>
       <div className="max-w-6xl mx-auto px-6 py-12">
         <ProductForm
-          product={{}}
+          product={draft}
           categories={categories.map((cat: any) => cat.name)}
           promotions={[]}
           onSave={async (data) => {
             try {
-              const newProduct = await createProduct(data);
-              toast({ title: 'Prodotto creato', description: 'Il nuovo prodotto è stato aggiunto.' });
-              navigate(`/admin/prodotto/${newProduct.id}`);
+              // Attiva il prodotto (stato active)
+              await updateProduct(draft.id, { ...data, is_active: true });
+              toast({ title: 'Prodotto attivato', description: 'Il prodotto è ora attivo.' });
+              navigate(`/admin/prodotto/${draft.id}`);
             } catch (err) {
-              toast({ title: 'Errore', description: 'Impossibile creare il prodotto', variant: 'destructive' });
+              toast({ title: 'Errore', description: 'Impossibile attivare il prodotto', variant: 'destructive' });
             }
           }}
           onDelete={undefined}

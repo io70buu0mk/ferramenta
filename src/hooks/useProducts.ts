@@ -14,20 +14,22 @@ export type Product = {
   created_at: string;
   updated_at: string;
   created_by: string | null;
+  status?: 'draft' | 'published' | 'archived' | 'deleted';
 };
 
-export function useProducts() {
+
+export function useProducts(options?: { all?: boolean }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+      let query = supabase.from('products').select('*').order('created_at', { ascending: false });
+      if (!options?.all) {
+        query = query.eq('is_active', true);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {
