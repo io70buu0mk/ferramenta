@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import ServiziFerramenta from "@/components/home/ServiziFerramenta";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { 
@@ -101,32 +102,32 @@ export default function Home() {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-10 min-w-0 flex-shrink flex-nowrap overflow-x-auto">
-            <button 
-              onClick={() => document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' })}
-              className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium"
-            >
-              Home
-            </button>
-            <button 
-              onClick={() => document.getElementById('prodotti')?.scrollIntoView({ behavior: 'smooth' })}
-              className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium"
-            >
-              Prodotti
-            </button>
-            <button 
-              onClick={() => navigate('/servizi')}
-              className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium"
-            >
-              Servizi
-            </button>
-            <button 
-              onClick={() => document.getElementById('contatti')?.scrollIntoView({ behavior: 'smooth' })}
-              className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium"
-            >
-              Contatti
-            </button>
-          </div>
+              <div className="hidden lg:flex items-center gap-10 min-w-0 flex-shrink flex-nowrap overflow-x-auto">
+                <button 
+                  onClick={() => document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium"
+                >
+                  Home
+                </button>
+                <button 
+                  onClick={() => document.getElementById('prodotti')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium"
+                >
+                  Prodotti
+                </button>
+                <button 
+                  onClick={() => document.getElementById('servizi')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium"
+                >
+                  Servizi
+                </button>
+                <button 
+                  onClick={() => document.getElementById('contatti')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium"
+                >
+                  Contatti
+                </button>
+              </div>
 
           {/* Auth Section */}
           <div className="flex items-center gap-2">
@@ -188,48 +189,48 @@ export default function Home() {
         </div>
 
         {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden mt-4 pt-4 border-t border-neutral-200">
-            <div className="flex flex-col gap-3">
-              <button 
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium text-left"
-              >
-                Home
-              </button>
-              <button 
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  document.getElementById('prodotti')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium text-left"
-              >
-                Prodotti
-              </button>
-              <button 
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  navigate('/servizi');
-                }}
-                className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium text-left"
-              >
-                Servizi
-              </button>
-              <button 
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  document.getElementById('contatti')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium text-left"
-              >
-                Contatti
-              </button>
+          {isMenuOpen && (
+            <div className="md:hidden mt-4 pt-4 border-t border-neutral-200">
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium text-left"
+                >
+                  Home
+                </button>
+                <button 
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    document.getElementById('prodotti')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium text-left"
+                >
+                  Prodotti
+                </button>
+                <button 
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    document.getElementById('servizi')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium text-left"
+                >
+                  Servizi
+                </button>
+                <button 
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    document.getElementById('contatti')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="text-neutral-600 hover:text-neutral-900 transition-colors text-sm font-medium text-left"
+                >
+                  Contatti
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </nav>
 
       {/* Hero Section - With Background */}
@@ -321,7 +322,6 @@ export default function Home() {
             </h2>
             <p className="text-xl text-white/90 drop-shadow-lg">Strumenti professionali per ogni esigenza</p>
           </div>
-          
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {productsLoading ? (
               // Loading skeleton
@@ -419,24 +419,43 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Contact Section - White Background */}
-      <section id="contatti" className="py-24 px-6 bg-white relative z-10">
+      {/* Servizi Section - White Background */}
+      <section id="servizi" className="py-24 px-6 bg-white relative z-10">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-neutral-900 to-neutral-700 bg-clip-text text-transparent">
+              I Nostri Servizi
+            </h2>
+            <p className="text-xl text-neutral-600">Comodità e professionalità per ogni esigenza</p>
+          </div>
+          {/* Componente servizi */}
+          <ServiziFerramenta />
+        </div>
+      </section>
+
+      {/* Contact Section - Background Image come sezione prodotti */}
+      <section id="contatti" className="py-24 px-6 relative z-10" style={{
+        backgroundImage: `url(${ferramentaBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}>
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-16 bg-gradient-to-r from-neutral-900 to-neutral-700 bg-clip-text text-transparent">
+          <h2 className="text-4xl md:text-5xl font-bold mb-16 text-white drop-shadow-2xl">
             Contattaci
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white border border-neutral-200/50 rounded-2xl p-8 hover:shadow-xl transition-all duration-300 shadow-lg">
+            <div className="bg-white/90 border border-neutral-200/50 rounded-2xl p-8 hover:shadow-xl transition-all duration-300 shadow-lg">
               <Phone size={32} className="text-amber-500 mx-auto mb-4" />
               <p className="font-semibold text-neutral-800 mb-2">Telefono</p>
               <p className="text-neutral-600">+39 389 982 2879</p>
             </div>
-            <div className="bg-white border border-neutral-200/50 rounded-2xl p-8 hover:shadow-xl transition-all duration-300 shadow-lg">
+            <div className="bg-white/90 border border-neutral-200/50 rounded-2xl p-8 hover:shadow-xl transition-all duration-300 shadow-lg">
               <Mail size={32} className="text-amber-500 mx-auto mb-4" />
               <p className="font-semibold text-neutral-800 mb-2">Email</p>
               <p className="text-neutral-600">ferramenta.lucini@gmail.com</p>
             </div>
-            <div className="bg-white border border-neutral-200/50 rounded-2xl p-8 hover:shadow-xl transition-all duration-300 shadow-lg">
+            <div className="bg-white/90 border border-neutral-200/50 rounded-2xl p-8 hover:shadow-xl transition-all duration-300 shadow-lg">
               <MapPin size={32} className="text-amber-500 mx-auto mb-4" />
               <p className="font-semibold text-neutral-800 mb-2">Indirizzo</p>
               <p className="text-neutral-600">45.286141, 10.263403 <a href="https://maps.google.com/?q=45.286141,10.263403" target="_blank" rel="noopener noreferrer" className="underline text-verdesalvia ml-2">Mappa</a></p>
