@@ -23,6 +23,7 @@ export function usePublicProducts() {
         .select('id, name, description, price, category, images, stock_quantity, status')
         .order('created_at', { ascending: false });
 
+      console.log('[usePublicProducts] Dati prodotti da Supabase:', data);
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {

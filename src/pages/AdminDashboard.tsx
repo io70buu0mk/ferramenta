@@ -1,3 +1,4 @@
+import AdminCategoriesPage from "./AdminCategoriesPage";
   import { showToastFeedback } from '@/components/ui/ToastFeedback';
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -205,6 +206,7 @@ type UserProfile = {
 
 const adminMenuItems = [
   { id: "dashboard", title: "Dashboard", description: "Panoramica generale" },
+  { id: "categories", title: "Categorie", description: "Gestione categorie" },
   { id: "products", title: "Prodotti", description: "Gestione catalogo" },
   { id: "promotions", title: "Promozioni", description: "Gestione sconti e offerte" },
   { id: "users", title: "Utenti", description: "Gestione utenti" },
@@ -680,6 +682,12 @@ export default function AdminDashboard() {
                     </CardContent>
                   </Card>
                 </div>
+              </TabsContent>
+
+
+              {/* Categories Tab */}
+              <TabsContent value="categories" className="space-y-6">
+                <AdminCategoriesPage />
               </TabsContent>
 
               {/* Products Tab */}

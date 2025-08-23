@@ -10,7 +10,8 @@ import {
   User,
   LogOut,
   Shield,
-  Percent
+  Percent,
+  Wrench
 } from "lucide-react";
 import {
   Sidebar,
@@ -40,6 +41,12 @@ interface AdminSidebarProps {
 }
 
 export const adminMenuItems = [
+  {
+    id: "categories",
+    title: "Categorie",
+    icon: Wrench,
+    description: "Gestione categorie"
+  },
   { 
     id: "dashboard", 
     title: "Dashboard", 

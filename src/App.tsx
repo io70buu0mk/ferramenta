@@ -23,6 +23,7 @@ import AdminOrdersPage from "./pages/AdminOrdersPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import OrderConfirmationPage from "./pages/OrderConfirmationPage";
 import ProductCreateRedirect from "./pages/ProductCreateRedirect";
+import AdminCategoriesPage from "./pages/AdminCategoriesPage";
 
 const App = () => {
   useEffect(() => {
@@ -36,7 +37,7 @@ const App = () => {
   return (
     <CartProvider>
       <BrowserRouter>
-        <Routes>
+  <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/prodotti" element={<ProductsPage />} />
@@ -60,6 +61,7 @@ const App = () => {
           <Route path="/order-review" element={<OrderReviewPage />} />
           <Route path="/user-orders" element={<UserOrdersPage />} />
           <Route path="/admin-ordini" element={<AdminOrdersPage />} />
+          <Route path="/admin/categories" element={<AdminCategoriesPage />} />
           <Route path="*" element={<Home />} />
         </Routes>
         <Toaster />
