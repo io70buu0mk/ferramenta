@@ -3,6 +3,7 @@ import { useToast } from "@/components/ui/simple-toast";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { CustomDropdown } from "@/components/ui/CustomDropdown";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Product, ProductStatus } from "./api";
 
@@ -430,32 +431,23 @@ export function ProductEditForm() {
           </div>
           <div>
             <label htmlFor="product-category" className="block font-bold mb-2 text-gray-800 text-lg">Categoria</label>
-            <select
-              id="product-category"
-              className="w-full rounded-2xl border border-gray-200 bg-white p-4 shadow focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-200 text-gray-900 text-base"
+            <CustomDropdown
+              options={[{ value: "", label: "Seleziona categoria" }, ...categories.map(cat => ({ value: cat.name, label: cat.name }))]}
               value={product.category}
-              onChange={e => handleChange('category', e.target.value)}
-              aria-label="Categoria prodotto"
-            >
-              <option value="">Seleziona categoria</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.name}>{cat.name}</option>
-              ))}
-            </select>
+              onChange={val => handleChange('category', val)}
+              placeholder="Seleziona categoria"
+              className="mb-2"
+            />
           </div>
           <div>
             <label htmlFor="product-status" className="block font-bold mb-2 text-gray-800 text-lg">Stato</label>
-            <select
-              id="product-status"
-              className="w-full rounded-2xl border border-gray-200 bg-white p-4 shadow focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-200 text-gray-900 text-base"
+            <CustomDropdown
+              options={statusOptions}
               value={product.status}
-              onChange={e => handleChange('status', e.target.value as any)}
-              aria-label="Stato prodotto"
-            >
-              {statusOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+              onChange={val => handleChange('status', val as any)}
+              placeholder="Seleziona stato"
+              className="mb-2"
+            />
           </div>
         </div>
       </div>

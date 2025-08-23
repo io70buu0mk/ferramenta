@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getSignedImageUrl } from '@/integrations/supabase/imageUpload';
+// import { getSignedImageUrl } from '@/integrations/supabase/imageUpload';
 import { useCart } from '../hooks/useCart';
 import { Heart } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -11,35 +11,13 @@ import { useProductPromotions } from '@/hooks/useProductPromotions';
 
 export default function ProductDetail() {
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
-  const [signedUrls, setSignedUrls] = useState<string[]>([]);
   const { dispatch, wishlist, wishlistDispatch } = useCart();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<PublicProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const { products, productPromotionMap } = useProductPromotions();
-  // Recupera signed URL per tutte le immagini
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchUrls() {
-      if (!product?.images || product.images.length === 0) {
-        setSignedUrls([]);
-        return;
-      }
-      const urls: string[] = [];
-      for (const filePath of product.images) {
-        try {
-          const url = await getSignedImageUrl(filePath);
-          urls.push(url);
-        } catch {
-          urls.push('/placeholder.svg');
-        }
-      }
-      if (isMounted) setSignedUrls(urls);
-    }
-    fetchUrls();
-    return () => { isMounted = false; };
-  }, [product?.images]);
+  // Nessuna signed URL, uso direttamente tutti gli URL pubblici dell'array images
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -162,7 +140,7 @@ export default function ProductDetail() {
           <div className="space-y-4">
             <div className="aspect-square bg-muted rounded-2xl overflow-hidden relative flex items-center justify-center">
               <img
-                src={signedUrls.length > 0 ? signedUrls[selectedImageIdx] || signedUrls[0] : '/placeholder.svg'}
+                src={product.images && product.images.length > 0 ? product.images[selectedImageIdx] || product.images[0] : '/placeholder.svg'}
                 alt={`${product.name} immagine principale`}
                 className="w-full h-full object-contain rounded-2xl transition-all duration-300 shadow-lg"
                 style={{ maxHeight: '420px', background: '#fff' }}
@@ -173,9 +151,9 @@ export default function ProductDetail() {
               )}
             </div>
             {/* Thumbnails scrollabili */}
-            {signedUrls.length > 1 && (
+            {product.images && product.images.length > 1 && (
               <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
-                {signedUrls.map((url, idx) => (
+                {product.images.map((url, idx) => (
                   <button
                     key={idx}
                     type="button"
