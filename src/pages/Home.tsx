@@ -364,11 +364,13 @@ export default function Home() {
                     onClick={() => navigate(`/prodotto/${product.id}`)}
                   >
                     <div className="h-48 overflow-hidden relative">
-                      {product.image_url ? (
+                      {product.images && product.images.length > 0 ? (
                         <img 
-                          src={product.image_url} 
+                          src={product.images[0]} 
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={() => console.log('Errore caricamento immagine:', product.images[0])}
+                          onLoad={() => console.log('Immagine caricata:', product.images[0])}
                         />
                       ) : (
                         <div className="w-full h-full bg-neutral-100 flex items-center justify-center">
