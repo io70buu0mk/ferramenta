@@ -1,8 +1,9 @@
+  import { showToastFeedback } from '@/components/ui/ToastFeedback';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 // Lista prodotti con tab/filtri per stato e badge colorati
 function ProductListUnified({ userId }: { userId: string }) {
-  const { products, loading: productsLoading, deleteProduct } = useProducts({ all: true });
+  const { products, loading: productsLoading, deleteProduct, updateProduct } = useProducts({ all: true });
   const navigate = useNavigate();
   type ProductTab = 'draft' | 'published' | 'archived' | 'deleted' | 'purchased';
   const [tab, setTab] = React.useState<ProductTab>('draft');
@@ -100,7 +101,19 @@ function ProductListUnified({ userId }: { userId: string }) {
                   <Button size="sm" variant="outline" onClick={()=>navigate(`/admin/${userId}/products/edit/${product.id}`)}>
                     <Edit size={16} />
                   </Button>
-                  <Button size="sm" variant="destructive" onClick={()=>deleteProduct(product.id)}>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={async () => {
+                      if (product.status !== 'deleted') {
+                        await updateProduct(product.id, { status: 'deleted' });
+                        showToastFeedback('info', 'Prodotto eliminato', 'Il prodotto è stato spostato nella sezione Eliminati.');
+                      } else {
+                        await deleteProduct(product.id);
+                        showToastFeedback('error', 'Prodotto eliminato definitivamente', 'Il prodotto è stato rimosso dal database.');
+                      }
+                    }}
+                  >
                     <Trash size={16} />
                   </Button>
                 </div>

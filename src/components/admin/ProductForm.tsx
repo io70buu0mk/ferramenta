@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { uploadProductImage, getSignedImageUrl } from '@/integrations/supabase/imageUpload';
+import { Package } from 'lucide-react';
 import { Listbox } from '@headlessui/react';
+import { showToastFeedback } from '@/components/ui/ToastFeedback';
 
 type ProductFormState = {
   id?: string;
@@ -121,6 +123,7 @@ export default function ProductForm(props: ProductFormProps) {
   const [errors, setErrors] = useState<ProductFormErrors>({});
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadingImages, setUploadingImages] = useState<any[]>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const isFirstRender = useRef(true);
 
   useEffect(() => {
@@ -239,13 +242,16 @@ export default function ProductForm(props: ProductFormProps) {
           <div className="mb-6 w-full flex flex-col items-center">
                 <div className="flex flex-col gap-3 justify-center items-center">
                   {/* Immagine grande selezionata in alto */}
-                <div className="mb-4">
-                  <img
-                    src={signedUrls.length > 0 ? signedUrls[selectedImageIndex] || signedUrls[0] : '/placeholder.svg'}
-                    alt="Immagine prodotto"
-                    className="w-64 h-80 object-cover rounded-xl border shadow-lg mx-auto"
-                    onError={e => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
-                  />
+                <div className="mb-4 flex items-center justify-center w-64 h-80 mx-auto bg-yellow-50 rounded-xl border shadow-lg">
+                  {signedUrls.length > 0 ? (
+                    <img
+                      src={signedUrls[selectedImageIndex] || signedUrls[0]}
+                      alt="Immagine prodotto"
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                  ) : (
+                    <Package size={96} className="text-yellow-400" />
+                  )}
                 </div>
                   {/* Miniature + pulsante aggiunta in una riga sotto */}
                   <div className="flex gap-3 justify-center items-center mt-2">
@@ -283,108 +289,81 @@ export default function ProductForm(props: ProductFormProps) {
           {showUploadModal && (
             <UploadModal
               onClose={() => setShowUploadModal(false)}
-              uploadingImages={uploadingImages}
+              uploadingImages={[]}
               onUpload={handleUploadImages}
             />
           )}
-        </div>
-      </div>
-      <div className="flex-1">
-        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-10 border border-yellow-100">
-          <h2 className="text-3xl font-extrabold mb-8 text-gray-800">Dettagli Prodotto</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-            {/* Nome prodotto */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <label className="block font-bold text-gray-800 tracking-wide text-base">Nome Prodotto</label>
-                <span className="text-xs text-gray-400" title="Il nome sarà visibile agli utenti.">ⓘ</span>
-              </div>
-              <input
-                type="text"
-                className={`w-full rounded-2xl border border-gray-200 bg-white p-3 shadow-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-200 text-gray-900 placeholder-gray-400 text-base ${errors.name ? 'border-red-300 ring-2 ring-red-200 animate-shake' : ''}`}
-                value={form.name}
-                onChange={e => handleFieldChange('name', e.target.value)}
-                placeholder="Bozza"
-                aria-label="Nome prodotto"
-              />
-              <span className="text-xs text-gray-500 ml-1" title="Campo obbligatorio">Obbligatorio</span>
-              {form.name.trim() === '' && (
-                <div className="text-xs text-yellow-600 mt-1">Se lasci vuoto, il nome sarà generato automaticamente come "Bozza N"</div>
-              )}
-              {errors.name && <div className="text-xs text-red-500 mt-1 animate-fade-in">{errors.name}</div>}
-            </div>
-            {/* Categoria */}
-            <div>
-              <label className="block font-bold mb-2 text-gray-800 tracking-wide text-base">Categoria</label>
-              <Listbox value={form.category} onChange={value => handleFieldChange('category', value)}>
-                <div className="relative">
-                  <Listbox.Button className="w-full rounded-2xl border border-gray-200 bg-white p-3 shadow-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-200 text-gray-900 text-base flex justify-between items-center">
-                    {form.category || "Seleziona categoria"}
-                    <span className="text-yellow-400 text-xl ml-2">▼</span>
-                  </Listbox.Button>
-                  <Listbox.Options className="absolute mt-2 w-full bg-white rounded-2xl shadow-xl border border-yellow-100 z-10 max-h-60 overflow-auto">
-                    <Listbox.Option value="" disabled>
-                      <span className="block px-4 py-2 text-gray-400">Seleziona categoria</span>
+          {/* Categoria */}
+          <div>
+            <label className="block font-bold mb-2 text-gray-800 tracking-wide text-base">Categoria</label>
+            <Listbox value={form.category} onChange={value => handleFieldChange('category', value)}>
+              <div className="relative">
+                <Listbox.Button className="w-full rounded-2xl border border-gray-200 bg-white p-3 shadow-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-200 text-gray-900 text-base flex justify-between items-center">
+                  {form.category || "Seleziona categoria"}
+                  <span className="text-yellow-400 text-xl ml-2">▼</span>
+                </Listbox.Button>
+                <Listbox.Options className="absolute mt-2 w-full bg-white rounded-2xl shadow-xl border border-yellow-100 z-10 max-h-60 overflow-auto">
+                  <Listbox.Option value="" disabled>
+                    <span className="block px-4 py-2 text-gray-400">Seleziona categoria</span>
+                  </Listbox.Option>
+                  {categories && categories.map((cat: string) => (
+                    <Listbox.Option
+                      key={cat}
+                      value={cat}
+                      className={({ active, selected }) =>
+                        `cursor-pointer px-4 py-2 text-base rounded-xl transition-all ${
+                          active ? 'bg-yellow-100 text-yellow-700' : 'text-gray-900'
+                        } ${selected ? 'font-bold bg-yellow-200' : ''}`
+                      }
+                    >
+                      {cat}
                     </Listbox.Option>
-                    {categories && categories.map((cat: string) => (
-                      <Listbox.Option
-                        key={cat}
-                        value={cat}
-                        className={({ active, selected }) =>
-                          `cursor-pointer px-4 py-2 text-base rounded-xl transition-all ${
-                            active ? 'bg-yellow-100 text-yellow-700' : 'text-gray-900'
-                          } ${selected ? 'font-bold bg-yellow-200' : ''}`
-                        }
-                      >
-                        {cat}
-                      </Listbox.Option>
-                    ))}
-                  </Listbox.Options>
-                </div>
-              </Listbox>
-              <span className="text-xs text-gray-500 ml-1" title="Campo obbligatorio">Obbligatorio</span>
-              {errors.category && <div className="text-xs text-red-500 mt-1">{errors.category}</div>}
-            </div>
-            {/* Stock */}
-            <div>
-              <label className="block font-bold mb-2 text-gray-800 tracking-wide text-base">Stock</label>
-              <input
-                type="number"
-                className="w-full rounded-2xl border border-gray-200 bg-white p-3 shadow-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-200 text-gray-900 text-base"
-                min={0}
-                value={form.stock}
-                onChange={e => handleFieldChange('stock', e.target.value)}
-                aria-label="Stock disponibile"
-              />
-              <span className="text-xs text-gray-500 ml-1" title="Quantità disponibile">Disponibilità</span>
-            </div>
-            {/* Stato */}
-            <div>
-              <label className="block font-bold mb-2 text-gray-800 tracking-wide text-base">Stato</label>
-              <div className="relative group">
-                <select className="w-full rounded-2xl border border-gray-200 bg-white p-3 shadow-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-200 text-gray-900 text-base appearance-none cursor-pointer group-hover:border-yellow-400 group-hover:ring-2 group-hover:ring-yellow-100" value={form.status} onChange={e => handleFieldChange('status', e.target.value)} aria-label="Seleziona stato" style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}>
-                  <option value="draft" className="bg-white text-gray-900 py-3 px-4 hover:bg-yellow-50 hover:text-yellow-700 transition-all text-base">Bozza</option>
-                  <option value="active" className="bg-white text-gray-900 py-3 px-4 hover:bg-yellow-50 hover:text-yellow-700 transition-all text-base">Attivo</option>
-                  <option value="inactive" className="bg-white text-gray-900 py-3 px-4 hover:bg-yellow-50 hover:text-yellow-700 transition-all text-base">Non attivo</option>
-                </select>
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-yellow-400 text-xl">▼</span>
+                  ))}
+                </Listbox.Options>
               </div>
+            </Listbox>
+            <span className="text-xs text-gray-500 ml-1" title="Campo obbligatorio">Obbligatorio</span>
+            {errors.category && <div className="text-xs text-red-500 mt-1">{errors.category}</div>}
+          </div>
+          {/* Stock */}
+          <div>
+            <label className="block font-bold mb-2 text-gray-800 tracking-wide text-base">Stock</label>
+            <input
+              type="number"
+              className="w-full rounded-2xl border border-gray-200 bg-white p-3 shadow-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-200 text-gray-900 text-base"
+              min={0}
+              value={form.stock}
+              onChange={e => handleFieldChange('stock', e.target.value)}
+              aria-label="Stock disponibile"
+            />
+            <span className="text-xs text-gray-500 ml-1" title="Quantità disponibile">Disponibilità</span>
+          </div>
+          {/* Stato */}
+          <div>
+            <label className="block font-bold mb-2 text-gray-800 tracking-wide text-base">Stato</label>
+            <div className="relative group">
+              <select className="w-full rounded-2xl border border-gray-200 bg-white p-3 shadow-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-200 text-gray-900 text-base appearance-none cursor-pointer group-hover:border-yellow-400 group-hover:ring-2 group-hover:ring-yellow-100" value={form.status} onChange={e => handleFieldChange('status', e.target.value)} aria-label="Seleziona stato" style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}>
+                <option value="draft" className="bg-white text-gray-900 py-3 px-4 hover:bg-yellow-50 hover:text-yellow-700 transition-all text-base">Bozza</option>
+                <option value="active" className="bg-white text-gray-900 py-3 px-4 hover:bg-yellow-50 hover:text-yellow-700 transition-all text-base">Attivo</option>
+                <option value="inactive" className="bg-white text-gray-900 py-3 px-4 hover:bg-yellow-50 hover:text-yellow-700 transition-all text-base">Non attivo</option>
+              </select>
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-yellow-400 text-xl">▼</span>
             </div>
-            {/* Prezzo */}
-            <div>
-              <label className="block font-bold mb-2 text-gray-800 tracking-wide text-base">Prezzo</label>
-              <input
-                type="number"
-                className={`w-full rounded-2xl border border-gray-200 bg-white p-3 shadow-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-200 text-gray-900 text-base ${errors.price ? 'border-red-300 ring-2 ring-red-200 animate-shake' : ''}`}
-                min={0}
-                step={0.01}
-                value={form.price}
-                onChange={e => handleFieldChange('price', e.target.value)}
-                aria-label="Prezzo in euro"
-              />
-              <span className="text-xs text-gray-500 ml-1" title="Prezzo di vendita">Prezzo in euro</span>
-              {errors.price && <div className="text-xs text-red-500 mt-1 animate-fade-in">{errors.price}</div>}
-            </div>
+          </div>
+          {/* Prezzo */}
+          <div>
+            <label className="block font-bold mb-2 text-gray-800 tracking-wide text-base">Prezzo</label>
+            <input
+              type="number"
+              className={`w-full rounded-2xl border border-gray-200 bg-white p-3 shadow-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-200 text-gray-900 text-base ${errors.price ? 'border-red-300 ring-2 ring-red-200 animate-shake' : ''}`}
+              min={0}
+              step={0.01}
+              value={form.price}
+              onChange={e => handleFieldChange('price', e.target.value)}
+              aria-label="Prezzo in euro"
+            />
+            <span className="text-xs text-gray-500 ml-1" title="Prezzo di vendita">Prezzo in euro</span>
+            {errors.price && <div className="text-xs text-red-500 mt-1 animate-fade-in">{errors.price}</div>}
           </div>
           {/* Descrizione */}
           <div className="mb-10">
@@ -420,23 +399,61 @@ export default function ProductForm(props: ProductFormProps) {
           {/* Pulsanti azione */}
           <div className="flex justify-between items-center mt-10">
             <div className="flex gap-4 items-center">
+              {/* Pulsante Elimina con modale custom */}
               {onDelete && (
-                <button type="button" className="text-red-500 hover:text-red-700 font-semibold flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 bg-white shadow-sm transition-all duration-200 hover:scale-105" onClick={onDelete} title="Elimina questo prodotto" aria-label="Elimina questo prodotto">
-                  <span>🗑️</span> Elimina
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="bg-gradient-to-r from-pink-500 via-red-500 to-yellow-400 text-white font-bold flex items-center gap-2 px-5 py-3 rounded-2xl shadow-lg hover:scale-105 hover:from-red-600 hover:to-yellow-500 transition-all duration-200 border-0"
+                    onClick={() => setShowDeleteModal(true)}
+                    title="Elimina questo prodotto"
+                    aria-label="Elimina questo prodotto"
+                  >
+                    <span>🗑️</span> Elimina
+                  </button>
+                  {showDeleteModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                      <div className="bg-gradient-to-br from-red-100 via-yellow-50 to-pink-100 rounded-3xl shadow-2xl p-10 flex flex-col items-center gap-6 min-w-[340px] max-w-[90vw] border-4 border-red-300 relative animate-fade-in">
+                        <span className="text-red-500 text-6xl mb-2 animate-bounce">🗑️</span>
+                        <h2 className="text-3xl font-extrabold text-red-600 mb-2 drop-shadow">Vuoi davvero eliminare?</h2>
+                        <p className="text-center text-lg text-gray-700 mb-4">Questa azione <span className="font-bold text-red-500">non può essere annullata</span>.<br />Il prodotto sarà spostato tra gli eliminati.</p>
+                        <div className="flex gap-6 mt-2">
+                          <button
+                            className="bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:scale-105 hover:from-red-600 hover:to-pink-600 transition-all"
+                            onClick={async () => {
+                              setShowDeleteModal(false);
+                              await onDelete();
+                            }}
+                          >Conferma eliminazione</button>
+                          <button
+                            className="bg-gray-100 hover:bg-yellow-200 text-gray-700 font-semibold px-8 py-3 rounded-xl shadow-lg"
+                            onClick={() => setShowDeleteModal(false)}
+                          >Annulla</button>
+                        </div>
+                        <button
+                          className="absolute top-4 right-4 text-2xl text-gray-400 hover:text-red-400 font-bold bg-white rounded-full border border-gray-200 w-10 h-10 flex items-center justify-center shadow"
+                          onClick={() => setShowDeleteModal(false)}
+                          aria-label="Chiudi modale eliminazione"
+                        >×</button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
+              {/* Pulsante Indietro con redirect alla sezione prodotti admin */}
               <button
                 type="button"
-                className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-2xl shadow transition flex items-center gap-2"
-                onClick={() => window.location.assign('/admin')}
-                title="Torna alla home admin"
-                aria-label="Torna alla home admin"
+                className="bg-gradient-to-r from-yellow-400 via-pink-300 to-blue-400 text-white font-bold px-6 py-3 rounded-2xl shadow-lg flex items-center gap-2 hover:scale-105 transition-all duration-200 border-0"
+                onClick={() => window.location.assign(`/admin/${form.id ? product?.user_id || '' : ''}/products`)}
+                title="Torna alla sezione prodotti"
+                aria-label="Torna alla sezione prodotti"
               >
-                <span>⬅️</span> Torna indietro
+                <span>⬅️</span> Indietro
               </button>
+              {/* Pulsante Salva */}
               <button
                 type="button"
-                className="bg-yellow-400 hover:bg-yellow-500 text-white font-bold px-8 py-3 rounded-2xl shadow-lg transition flex items-center gap-2 transition-all duration-200 hover:scale-105"
+                className="bg-gradient-to-r from-green-400 via-yellow-400 to-pink-400 text-white font-bold px-8 py-3 rounded-2xl shadow-lg flex items-center gap-2 hover:scale-105 transition-all duration-200 border-0"
                 onClick={() => {
                   const mapped = {
                     ...form,
@@ -453,20 +470,6 @@ export default function ProductForm(props: ProductFormProps) {
                 <span>💾</span> Salva
               </button>
             </div>
-            {/* Mappatura dati per compatibilità backend */}
-            {/* Sostituisco la chiamata onSave(form) con la versione mappata */}
-            {/*
-            <button ... onClick={() => {
-              const mapped = {
-                ...form,
-                stock_quantity: Number(form.stock),
-                is_active: form.status === 'active',
-              };
-              delete mapped.stock;
-              delete mapped.status;
-              onSave(mapped);
-            }} ... >
-            */}
           </div>
         </div>
       </div>

@@ -7,6 +7,7 @@ import ProductForm from '@/components/admin/ProductForm';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useToast } from '@/hooks/use-toast';
+import { showToastFeedback } from '@/components/ui/ToastFeedback';
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { arrayMove, SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { useRef } from 'react';
@@ -70,7 +71,7 @@ export default function AdminProductDetail() {
       <div className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4 justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/admin/prodotti')} className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/${product?.user_id || ''}/products`)} className="flex items-center gap-2">
               <ArrowLeft size={16} />
               Indietro
             </Button>
@@ -80,9 +81,22 @@ export default function AdminProductDetail() {
       </div>
       <div className="max-w-6xl mx-auto px-6 py-12">
         <ProductForm
-          product={product}
-          onSave={async (data) => { await updateProduct(product.id, data); toast({ title: 'Prodotto aggiornato', description: 'Le modifiche sono state salvate.' }); }}
-          onDelete={async () => { await deleteProduct(product.id); navigate('/admin/prodotti'); }}
+          product={{ ...product, user_id: product?.user_id || '' }}
+          onSave={async (data) => {
+            await updateProduct(product.id, data);
+            showToastFeedback('success', 'Prodotto aggiornato', 'Le modifiche sono state salvate.');
+          }}
+          onDelete={async () => {
+            if (product.status !== 'deleted') {
+              await updateProduct(product.id, { status: 'deleted' });
+              showToastFeedback('info', 'Prodotto eliminato', 'Il prodotto è stato spostato nella sezione Eliminati.');
+              navigate(`/admin/${product?.user_id || ''}/products`);
+            } else {
+              await deleteProduct(product.id);
+              showToastFeedback('error', 'Prodotto eliminato definitivamente', 'Il prodotto è stato rimosso dal database.');
+              navigate(`/admin/${product?.user_id || ''}/products`);
+            }
+          }}
           categories={categories.map((cat: any) => cat.name)}
           promotions={product.promotions || []}
           onManagePromotions={() => {}}
