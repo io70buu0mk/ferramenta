@@ -1,20 +1,37 @@
-
-
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 // Lista prodotti con tab/filtri per stato e badge colorati
 function ProductListUnified({ userId }: { userId: string }) {
   const { products, loading: productsLoading, deleteProduct } = useProducts({ all: true });
   const navigate = useNavigate();
-  const [tab, setTab] = React.useState<'draft'|'published'|'archived'|'deleted'>('draft');
+  type ProductTab = 'draft' | 'published' | 'archived' | 'deleted' | 'purchased';
+  const [tab, setTab] = React.useState<ProductTab>('draft');
   const [search, setSearch] = React.useState('');
+
+  // Recupera i product_id acquistati da Supabase
+  const [purchasedProductIds, setPurchasedProductIds] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    async function fetchPurchasedProductIds() {
+      const { data, error } = await supabase
+        .from('order_items')
+        .select('product_id');
+      if (!error && data) {
+        // Rimuovi duplicati
+        const ids = Array.from(new Set(data.map((item: any) => item.product_id)));
+        setPurchasedProductIds(ids);
+      }
+    }
+    fetchPurchasedProductIds();
+  }, []);
 
   const filtered = products.filter(p => {
     const status = (p.status || 'draft');
-    const matchesTab = status === tab;
     const matchesSearch = !search || (p.name?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase()));
-    return matchesTab && matchesSearch;
+    if (tab === 'purchased') {
+      return purchasedProductIds.includes(p.id) && matchesSearch;
+    }
+    return status === tab && matchesSearch;
   });
 
   const badge = (status: string) => {
@@ -33,13 +50,14 @@ function ProductListUnified({ userId }: { userId: string }) {
       <div className="sticky top-0 z-10 bg-white/95 border-b border-neutral-200 pb-2 mb-6 flex flex-col gap-4">
         <div className="flex items-center gap-6 pt-4">
           <h1 className="text-3xl font-bold text-neutral-900 flex-1">Gestione Prodotti</h1>
-          <ProductCreateButton />
+          {/* Pulsante aggiunta prodotto rimosso dalla barra */}
         </div>
         <div className="flex items-center gap-2 mt-2">
           <button className={`px-5 py-2 rounded-full font-semibold text-base transition ${tab==='draft' ? 'bg-yellow-400 text-white shadow' : 'bg-neutral-100 text-neutral-700 hover:bg-yellow-100'}`} onClick={()=>setTab('draft')}>Bozze</button>
           <button className={`px-5 py-2 rounded-full font-semibold text-base transition ${tab==='published' ? 'bg-green-500 text-white shadow' : 'bg-neutral-100 text-neutral-700 hover:bg-green-100'}`} onClick={()=>setTab('published')}>Pubblicati</button>
           <button className={`px-5 py-2 rounded-full font-semibold text-base transition ${tab==='archived' ? 'bg-gray-400 text-white shadow' : 'bg-neutral-100 text-neutral-700 hover:bg-gray-100'}`} onClick={()=>setTab('archived')}>Archiviati</button>
           <button className={`px-5 py-2 rounded-full font-semibold text-base transition ${tab==='deleted' ? 'bg-red-500 text-white shadow' : 'bg-neutral-100 text-neutral-700 hover:bg-red-100'}`} onClick={()=>setTab('deleted')}>Eliminati</button>
+      <button className={`px-5 py-2 rounded-full font-semibold text-base transition ${tab==='purchased' ? 'bg-blue-500 text-white shadow' : 'bg-neutral-100 text-neutral-700 hover:bg-blue-100'}`} onClick={()=>setTab('purchased')}>Acquistati</button>
           <div className="flex-1" />
           <input
             type="text"
@@ -91,10 +109,20 @@ function ProductListUnified({ userId }: { userId: string }) {
           ))
         )}
       </div>
+
+      {/* Floating action button sempre visibile, circolare, in basso a destra */}
+      <button
+        className="fixed bottom-8 right-8 z-50 bg-yellow-400 hover:bg-yellow-500 text-white rounded-full shadow-lg w-16 h-16 flex items-center justify-center text-3xl"
+        onClick={() => navigate(`/admin/${userId}/products/new?redirect=auto`)}
+        aria-label="Nuovo prodotto"
+        title="Aggiungi nuovo prodotto"
+      >
+        <Plus size={32} />
+      </button>
       {/* Floating action button mobile */}
       <button
         className="fixed bottom-8 right-8 z-50 bg-yellow-400 hover:bg-yellow-500 text-white rounded-full shadow-lg p-4 md:hidden"
-        onClick={() => document.querySelector('button:contains("Nuovo prodotto")')?.click()}
+        onClick={() => (document.querySelector('button:contains("Nuovo prodotto")') as HTMLElement)?.click()}
         aria-label="Nuovo prodotto"
       >
         <Plus size={28} />
@@ -511,10 +539,6 @@ export default function AdminDashboard() {
               {/* Dashboard Tab */}
               <TabsContent value="dashboard" className="space-y-4 md:space-y-6">
                 {/* ...dashboard info... */}
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold mb-2">Gestione Prodotti</h2>
-                  <ProductListUnified userId={userId || user?.id || ''} />
-                </div>
                 <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
                   <Card className="bg-white/80 backdrop-blur-sm border border-neutral-200/50">
                     <CardHeader className="pb-2">
@@ -647,175 +671,7 @@ export default function AdminDashboard() {
 
               {/* Products Tab */}
               <TabsContent value="products" className="space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <h2 className="text-xl md:text-2xl font-bold text-neutral-800">Gestione Prodotti</h2>
-                  <div className="flex items-center gap-2 md:gap-3 overflow-x-auto">
-                    <Button
-                      size="sm"
-                      className="bg-yellow-400 text-white font-semibold rounded-lg hover:bg-yellow-500 transition flex-shrink-0"
-                      onClick={() => setShowDraftModal(true)}
-                    >Gestisci bozze</Button>
-      {/* Modal gestione bozze prodotti */}
-      {showDraftModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 min-w-[340px] max-w-[90vw] border-2 border-yellow-300 relative">
-            <button
-              className="absolute top-4 right-4 text-2xl text-yellow-500 hover:text-red-500 font-bold bg-white rounded-full border border-yellow-200 w-10 h-10 flex items-center justify-center shadow"
-              onClick={() => setShowDraftModal(false)}
-              aria-label="Chiudi bozze"
-            >×</button>
-            <h2 className="text-xl font-bold text-[#b43434] mb-4">Bozze prodotti</h2>
-            <BozzeProdottiList userId={userId || user?.id || ''} />
-          </div>
-        </div>
-      )}
-                    <ProductCreateButton />
-{/* ---
-// Versione unica e corretta della funzione BozzeProdottiList
-// (le importazioni sono già presenti in cima al file)
-
-
-function BozzeProdottiList() {
-  const [draftProducts, setDraftProducts] = React.useState<any[]>([]);
-  const [draftLoading, setDraftLoading] = React.useState(true);
-  const navigate = useNavigate();
-
-  React.useEffect(() => {
-    async function fetchDraftProducts() {
-      setDraftLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('status', 'draft')
-        .order('created_at', { ascending: false });
-      if (error) {
-        setDraftProducts([]);
-      } else {
-        setDraftProducts(data || []);
-      }
-      setDraftLoading(false);
-    }
-    fetchDraftProducts();
-  }, []);
-
-  if (draftLoading) return <div className="text-gray-400">Caricamento bozze...</div>;
-  if (draftProducts.length === 0) return <div className="text-gray-400">Nessuna bozza presente.</div>;
-  return (
-    <ul className="divide-y divide-gray-200">
-      {draftProducts.map(prod => (
-        <li key={prod.id} className="py-3 flex items-center justify-between">
-          <div>
-            <span className="font-bold text-[#b43434]">{prod.name || 'Senza nome'}</span>
-            <span className="ml-2 text-sm text-gray-500">{prod.category}</span>
-          </div>
-          <Button
-            size="sm"
-            className="bg-yellow-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition"
-            onClick={() => { navigate(`/admin/prodotto/${prod.id}`); }}
-          >Modifica</Button>
-        </li>
-      ))}
-    </ul>
-  );
-} */}
-                  </div>
-                </div>
-
-                <Card className="bg-white/80 backdrop-blur-sm border border-neutral-200/50">
-                  <CardHeader>
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1 relative">
-                        <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400" />
-                        <input
-                          type="text"
-                          placeholder="Cerca prodotti..."
-                          className="w-full pl-10 pr-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
-                        />
-                      </div>
-                      <Button variant="outline" className="flex items-center gap-2">
-                        <Filter size={16} />
-                        Filtri
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {productsLoading ? (
-                        <div className="text-center py-12 text-neutral-500">Caricamento prodotti...</div>
-                      ) : products.length > 0 ? (
-                        <div className="grid gap-4">
-                          {products.map((product) => {
-                            const safeStatus = product.status || 'draft';
-                            return (
-                              <div
-                                key={product.id}
-                                className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg cursor-pointer hover:bg-amber-50 transition"
-                                onClick={() => navigate(`/admin/${userId || user?.id || ''}/products/edit/${product.id}`)}
-                              >
-                                <div className="flex items-center gap-4 flex-1">
-                                  {/* Immagine prodotto o icona placeholder */}
-                                  {product.images && product.images.length > 0 ? (
-                                    <img
-                                      src={product.images[0]}
-                                      alt={product.name}
-                                      className="w-14 h-14 object-cover rounded-lg border border-neutral-200 bg-white"
-                                      onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = ''; }}
-                                    />
-                                  ) : (
-                                    <div className="w-14 h-14 flex items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50">
-                                      <Package size={32} className="text-neutral-300" />
-                                    </div>
-                                  )}
-                                  <div className="flex flex-col gap-1">
-                                    <h3 className="font-medium text-neutral-800">{product.name}</h3>
-                                    <p className="text-sm text-neutral-600">{product.category}</p>
-                                    <p className="text-sm text-neutral-500">
-                                      Prezzo: €{product.price} - Stock: {product.stock_quantity}
-                                    </p>
-                                    <span className={`px-2 py-0.5 rounded text-xs font-semibold mt-1 w-fit
-                                      ${safeStatus === 'draft' ? 'bg-yellow-100 text-yellow-800' : ''}
-                                      ${safeStatus === 'published' ? 'bg-green-100 text-green-800' : ''}
-                                      ${safeStatus === 'archived' ? 'bg-gray-200 text-gray-700' : ''}
-                                      ${safeStatus === 'deleted' ? 'bg-red-100 text-red-700' : ''}
-                                    `}>
-                                      {safeStatus === 'draft' && 'Bozza'}
-                                      {safeStatus === 'published' && 'Pubblicato'}
-                                      {safeStatus === 'archived' && 'Archiviato'}
-                                      {safeStatus === 'deleted' && 'Eliminato'}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => navigate(`/admin/${userId || user?.id || ''}/products/edit/${product.id}`)}
-                                  >
-                                    <Edit size={16} />
-                                  </Button>
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => deleteProduct(product.id)}
-                                  >
-                                    <Trash size={16} />
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="text-center py-12 text-neutral-500">
-                          <Package size={48} className="mx-auto mb-4 text-neutral-300" />
-                          <p className="text-lg font-medium mb-2">Nessun prodotto trovato</p>
-                          <p className="text-sm">Inizia aggiungendo il tuo primo prodotto</p>
-                          <ProductCreateButton />
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <ProductListUnified userId={userId || user?.id || ''} />
               </TabsContent>
 
               {/* Promotions Tab */}
@@ -823,11 +679,7 @@ function BozzeProdottiList() {
                 <PromotionsManager />
               </TabsContent>
 
-              {/* Products Tab - aggiungo sottosezione prodotti acquistati */}
-              <TabsContent value="products" className="space-y-4 md:space-y-6">
-                {/* ...esistente gestione catalogo... */}
-                <PurchasedProductsAdminSection />
-              </TabsContent>
+              {/* Products Tab - rimosso PurchasedProductsAdminSection, ora gestito dal filtro */}
 
               {/* Users Tab */}
               <TabsContent value="users" className="space-y-4 md:space-y-6">

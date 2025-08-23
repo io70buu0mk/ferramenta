@@ -1,27 +1,28 @@
-import AdminProductEdit from "./pages/AdminProductEdit";
-          <Route path="/admin/:userId/products/edit/:productId" element={<AdminProductEdit />} />
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import OrderReviewPage from "./pages/OrderReviewPage";
-import UserOrdersPage from "./pages/UserOrdersPage";
-import AuthPage from "./pages/AuthPage";
+import { Toaster } from "./components/ui/toaster";
+import { CartProvider } from './hooks/useCart';
+
 import Home from "./pages/Home";
-import ProductDetail from "./pages/ProductDetail";
+import AuthPage from "./pages/AuthPage";
 import ProductsPage from "./pages/ProductsPage";
 import ServicesPage from "./pages/ServicesPage";
+import ProductDetail from "./pages/ProductDetail";
 import ClienteAreaNew from "./pages/ClienteAreaNew";
 import AdminArea from "./pages/AdminArea";
 import AdminAreaNew from "./pages/AdminAreaNew";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminProductDetail from "./pages/AdminProductDetail";
 import AdminProductNew from "./pages/AdminProductNew";
+import AdminProductEdit from "./pages/AdminProductEdit";
+import OrderReviewPage from "./pages/OrderReviewPage";
+import UserOrdersPage from "./pages/UserOrdersPage";
 import EmailConfirmationPage from "./pages/EmailConfirmationPage";
 import EmailConfirmedPage from "./pages/EmailConfirmedPage";
-import { Toaster } from "./components/ui/toaster";
-import { CartProvider } from './hooks/useCart';
 import AdminOrdersPage from "./pages/AdminOrdersPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import OrderConfirmationPage from "./pages/OrderConfirmationPage";
+import ProductCreateRedirect from "./pages/ProductCreateRedirect";
 
 const App = () => {
   useEffect(() => {
@@ -30,8 +31,6 @@ const App = () => {
         // Notifiche push rimosse
       }
     });
-
-    // Notifiche push rimosse
   }, []);
 
   return (
@@ -47,6 +46,8 @@ const App = () => {
           <Route path="/email-confirmed" element={<EmailConfirmedPage />} />
           <Route path="/cliente" element={<ClienteAreaNew />} />
           <Route path="/cliente/:userId" element={<ClienteAreaNew />} />
+          <Route path="/admin/:userId/products/edit/:productId" element={<AdminProductEdit />} />
+          <Route path="/admin/:userId/products/new" element={<ProductCreateRedirect />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/:userId" element={<AdminDashboard />} />
           <Route path="/admin/:userId/:section" element={<AdminDashboard />} />
