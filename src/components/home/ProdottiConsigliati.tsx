@@ -1,10 +1,12 @@
 import React from "react";
 import { usePublicProducts } from "@/hooks/usePublicProducts";
+import { useProductPromotions } from "@/hooks/useProductPromotions";
 import { ShoppingCart, Wrench, Package } from "lucide-react";
 import { getSignedImageUrl } from "@/integrations/supabase/imageUpload";
 
 function ProdottiConsigliati() {
   const { products, loading } = usePublicProducts();
+  const { promoProductIds } = useProductPromotions();
   // Mostra solo gli ultimi 5 prodotti
   const lastProducts = React.useMemo(() => products.slice(0, 5), [products]);
   // Stato per le signed URL delle immagini
@@ -49,12 +51,14 @@ function ProdottiConsigliati() {
               </div>
             ))
           ) : lastProducts.length > 0 ? (
-            lastProducts.map((product, index) => (
-              <div
-                key={product.id}
-                className={`card-prodotto group animate-fade-in`}
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
+            lastProducts.map((product, index) => {
+              const isPromo = promoProductIds.has(product.id);
+              return (
+                <div
+                  key={product.id}
+                  className={`card-prodotto group animate-fade-in ${isPromo ? 'promo-product' : ''}`}
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
                 <div className="h-40 overflow-hidden relative rounded-t-2xl" style={{background: '#fafafa'}}>
                   {imageUrls[index] ? (
                     <img 
@@ -68,9 +72,9 @@ function ProdottiConsigliati() {
                       <Package size={32} className="text-neutral-400" />
                     </div>
                   )}
-                  <div className="absolute top-3 right-3 p-2 bg-bianco/90 backdrop-blur-sm rounded-full shadow-lg">
-                    <Wrench className="text-verdesalvia icon-glow" size={24} />
-                  </div>
+                  {isPromo && (
+                    <div className="promo-badge">In promozione</div>
+                  )}
                   {/* DEBUG VISIVO RIMOSSO: ora solo log in console */}
                 </div>
                 <div className="px-6 py-5 flex flex-col flex-1 h-full">
@@ -91,7 +95,8 @@ function ProdottiConsigliati() {
                   </div>
                 </div>
               </div>
-            ))
+              );
+            })
           ) : (
             <div className="col-span-full text-center py-12">
               <Package size={64} className="mx-auto mb-4 text-neutral-400" />

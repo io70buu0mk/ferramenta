@@ -31,8 +31,8 @@ export default function Home() {
   const {
     products,
     productsLoading,
-    productPromotionMap,
-    promoProductIds
+  promoProductIds,
+  promotions
   } = useProductPromotions();
 
   useEffect(() => {
@@ -336,26 +336,29 @@ export default function Home() {
               ))
             ) : products.length > 0 ? (
               products.slice(0, 4).map((product) => {
-                const promo = productPromotionMap[product.id];
+                let promo = null;
                 let finalPrice = product.price;
                 let badge = null;
                 let oldPrice = null;
-                if (promo && finalPrice) {
-                  if (promo.discount_type === 'percentage') {
-                    finalPrice = finalPrice * (1 - promo.discount_value / 100);
-                  } else if (promo.discount_type === 'fixed_price') {
-                    finalPrice = promo.discount_value;
+                if (promoProductIds.has(product.id)) {
+                  promo = promotions.find(p => p.product_ids?.includes(product.id));
+                  if (promo && finalPrice) {
+                    if (promo.discount_type === 'percentage') {
+                      finalPrice = finalPrice * (1 - promo.discount_value / 100);
+                    } else if (promo.discount_type === 'fixed_price') {
+                      finalPrice = promo.discount_value;
+                    }
+                    badge = (
+                      <span className="ml-2 px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full font-bold animate-pulse">
+                        In promozione
+                      </span>
+                    );
+                    oldPrice = (
+                      <span className="text-neutral-400 line-through text-sm ml-2">
+                        €{product.price?.toFixed(2)}
+                      </span>
+                    );
                   }
-                  badge = (
-                    <span className="ml-2 px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full font-bold animate-pulse">
-                      In promozione
-                    </span>
-                  );
-                  oldPrice = (
-                    <span className="text-neutral-400 line-through text-sm ml-2">
-                      €{product.price?.toFixed(2)}
-                    </span>
-                  );
                 }
                 return (
                   <div 

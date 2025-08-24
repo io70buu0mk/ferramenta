@@ -4,6 +4,7 @@ import { Toaster } from "./components/ui/toaster";
 import { CartProvider } from './hooks/useCart';
 
 import Home from "./pages/Home";
+import FavoritesPage from "./pages/FavoritesPage";
 import AuthPage from "./pages/AuthPage";
 import ProductsPage from "./pages/ProductsPage";
 import ServicesPage from "./pages/ServicesPage";
@@ -58,6 +59,7 @@ const App = () => {
           <Route path="/admin-old/:userId" element={<AdminAreaNew />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+          <Route path="/preferiti" element={<FavoritesPage />} />
           <Route path="/order-review" element={<OrderReviewPage />} />
           <Route path="/user-orders" element={<UserOrdersPage />} />
           <Route path="/admin-ordini" element={<AdminOrdersPage />} />

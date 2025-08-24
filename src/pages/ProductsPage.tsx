@@ -39,44 +39,28 @@ export default function ProductsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const { role, loading: roleLoading, isAdmin } = useUserRole(user);
   const { products, loading: productsLoading } = usePublicProducts();
-  const { promotions, loading: promotionsLoading, refetch, getPromotionProducts } = usePromotions();
+  const { promotions, loading: promotionsLoading, refetch } = usePromotions();
   const [promoOnly, setPromoOnly] = useState(false);
-  const [promotionProducts, setPromotionProducts] = useState<{product_id: string, promotion_id: string}[]>([]);
-  // Nessuna gestione signed URL, uso direttamente il primo link pubblico dell'array images
+  const [categories, setCategories] = useState<{ id: string, name: string }[]>([]);
 
-  // Carica tutte le relazioni prodotto-promozione attive
-  useEffectReact(() => {
-    const fetchPromotionProducts = async () => {
-      // Prendi solo promozioni attive e nel periodo
-      const now = new Date();
-      const activePromos = promotions.filter(p => p.is_active && new Date(p.start_date) <= now && new Date(p.end_date) >= now);
-      if (activePromos.length === 0) {
-        setPromotionProducts([]);
-        return;
-      }
-      // Prendi tutte le relazioni per queste promozioni
-      let allRelations: {product_id: string, promotion_id: string}[] = [];
-      for (const promo of activePromos) {
-        const rels = await getPromotionProducts(promo.id);
-        if (rels && Array.isArray(rels)) {
-          allRelations = allRelations.concat(rels.map((r: any) => ({ product_id: r.product_id, promotion_id: promo.id })));
-        }
-      }
-      setPromotionProducts(allRelations);
+  // Carica le categorie da Supabase
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name')
+        .order('name', { ascending: true });
+      if (!error && data) setCategories(data);
     };
-    fetchPromotionProducts();
+    fetchCategories();
+  }, []);
+
+  // Nuova logica: ottieni tutti gli ID dei prodotti in promozione
+  const promoProductIds = React.useMemo(() => {
+    return new Set(
+      promotions.flatMap(promo => promo.product_ids || [])
+    );
   }, [promotions]);
-
-  // Mappa prodotto -> promozione (prende la prima promozione trovata)
-  const productPromotionMap: Record<string, typeof promotions[0]> = {};
-  promotionProducts.forEach(rel => {
-    if (!productPromotionMap[rel.product_id]) {
-      const promo = promotions.find(p => p.id === rel.promotion_id);
-      if (promo) productPromotionMap[rel.product_id] = promo;
-    }
-  });
-
-  const promoProductIds = new Set(promotionProducts.map(rel => rel.product_id));
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -93,12 +77,6 @@ export default function ProductsPage() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
-
-  // Get unique categories
-  const categories = React.useMemo(() => {
-    const uniqueCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
-    return uniqueCategories;
-  }, [products]);
 
   // Filter and sort products
   const filteredProducts = React.useMemo(() => {
@@ -282,12 +260,20 @@ export default function ProductsPage() {
                       <SelectValue placeholder="Tutte le categorie" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Tutte le categorie</SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
+                      <div className="bg-white/95 rounded-xl shadow-lg max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-amber-300 scrollbar-track-neutral-100">
+                        <SelectItem value="all" className="py-3 text-base font-semibold border-b border-neutral-200">Tutte le categorie</SelectItem>
+                        {categories.map((cat, idx) => (
+                          <>
+                            <SelectItem
+                              key={cat.id}
+                              value={cat.name}
+                              className={`py-3 text-base font-semibold ${idx < categories.length - 1 ? 'border-b border-neutral-100' : ''} ${cat.name === selectedCategory ? 'bg-amber-50 text-amber-700' : ''}`}
+                            >
+                              {cat.name}
+                            </SelectItem>
+                          </>
+                        ))}
+                      </div>
                     </SelectContent>
                   </Select>
                 </div>
@@ -301,11 +287,13 @@ export default function ProductsPage() {
                       <SelectValue placeholder="Tutti i prezzi" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Tutti i prezzi</SelectItem>
-                      <SelectItem value="0-50">€0 - €50</SelectItem>
-                      <SelectItem value="50-100">€50 - €100</SelectItem>
-                      <SelectItem value="100-200">€100 - €200</SelectItem>
-                      <SelectItem value="200+">€200+</SelectItem>
+                      <div className="bg-white/95 rounded-xl shadow-lg max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-amber-300 scrollbar-track-neutral-100">
+                        <SelectItem value="all" className="py-3 text-base font-semibold border-b border-neutral-200">Tutti i prezzi</SelectItem>
+                        <SelectItem value="0-50" className="py-3 text-base font-semibold border-b border-neutral-100">€0 - €50</SelectItem>
+                        <SelectItem value="50-100" className="py-3 text-base font-semibold border-b border-neutral-100">€50 - €100</SelectItem>
+                        <SelectItem value="100-200" className="py-3 text-base font-semibold border-b border-neutral-100">€100 - €200</SelectItem>
+                        <SelectItem value="200+" className="py-3 text-base font-semibold">€200+</SelectItem>
+                      </div>
                     </SelectContent>
                   </Select>
                 </div>
@@ -319,10 +307,12 @@ export default function ProductsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="name">Nome A-Z</SelectItem>
-                      <SelectItem value="price_asc">Prezzo crescente</SelectItem>
-                      <SelectItem value="price_desc">Prezzo decrescente</SelectItem>
-                      <SelectItem value="newest">Più recenti</SelectItem>
+                      <div className="bg-white/95 rounded-xl shadow-lg max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-amber-300 scrollbar-track-neutral-100">
+                        <SelectItem value="name" className="py-3 text-base font-semibold border-b border-neutral-100">Nome A-Z</SelectItem>
+                        <SelectItem value="price_asc" className="py-3 text-base font-semibold border-b border-neutral-100">Prezzo crescente</SelectItem>
+                        <SelectItem value="price_desc" className="py-3 text-base font-semibold border-b border-neutral-100">Prezzo decrescente</SelectItem>
+                        <SelectItem value="newest" className="py-3 text-base font-semibold">Più recenti</SelectItem>
+                      </div>
                     </SelectContent>
                   </Select>
                 </div>
@@ -376,31 +366,35 @@ export default function ProductsPage() {
             ))
           ) : filteredProducts.length > 0 ? (
             filteredProducts.map((product) => {
-              const promo = productPromotionMap[product.id];
+              // Logica uniforme per promozioni
+              let promo = null;
               let finalPrice = product.price;
               let badge = null;
               let oldPrice = null;
-              if (promo && finalPrice) {
-                if (promo.discount_type === 'percentage') {
-                  finalPrice = finalPrice * (1 - promo.discount_value / 100);
-                } else if (promo.discount_type === 'fixed_price') {
-                  finalPrice = promo.discount_value;
+              if (promoProductIds.has(product.id)) {
+                promo = promotions.find(p => p.product_ids?.includes(product.id));
+                if (promo && finalPrice) {
+                  if (promo.discount_type === 'percentage') {
+                    finalPrice = finalPrice * (1 - promo.discount_value / 100);
+                  } else if (promo.discount_type === 'fixed_price') {
+                    finalPrice = promo.discount_value;
+                  }
+                  badge = (
+                    <span className="ml-2 px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full font-bold animate-pulse">
+                      In promozione
+                    </span>
+                  );
+                  oldPrice = (
+                    <span className="text-neutral-400 line-through text-sm ml-2">
+                      €{product.price?.toFixed(2)}
+                    </span>
+                  );
                 }
-                badge = (
-                  <span className="ml-2 px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full font-bold animate-pulse">
-                    In promozione
-                  </span>
-                );
-                oldPrice = (
-                  <span className="text-neutral-400 line-through text-sm ml-2">
-                    €{product.price?.toFixed(2)}
-                  </span>
-                );
               }
               return (
                 <Card 
                   key={product.id}
-                  className={`overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-neutral-200/50 bg-white/80 backdrop-blur-sm ${promo ? 'ring-2 ring-pink-300' : ''}`}
+                  className={`overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-neutral-200/50 bg-white/80 backdrop-blur-sm ${promo ? 'promo-product' : ''}`}
                 >
                   <div className="h-48 overflow-hidden relative" onClick={() => navigate(`/prodotto/${product.id}`)}>
                     {product.images && product.images.length > 0 && product.images[0] ? (
@@ -416,7 +410,7 @@ export default function ProductsPage() {
                       </div>
                     )}
                     {badge && (
-                      <div className="absolute top-2 right-2 z-10">{badge}</div>
+                      <div className="promo-badge">In promozione</div>
                     )}
                   </div>
                   <CardContent className="p-6">

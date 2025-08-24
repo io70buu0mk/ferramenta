@@ -1,0 +1,33 @@
+/* Stile per prodotti in promozione */
+.promo-product {
+  border: 2px solid #ec4899;
+  box-shadow: 0 0 12px #ec489933;
+  animation: promo-glow 1.5s infinite alternate;
+  border-radius: 1rem;
+  position: relative;
+}
+
+@keyframes promo-glow {
+  from { box-shadow: 0 0 12px #ec489933; }
+  to { box-shadow: 0 0 24px #ec4899cc; }
+}
+
+.promo-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #ec4899;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: bold;
+  padding: 4px 12px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px #ec489966;
+  z-index: 2;
+  animation: badge-pulse 1.2s infinite alternate;
+}
+
+@keyframes badge-pulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import WishlistModal from '../components/user/WishlistModal';
 import { useCart } from "../hooks/useCart";
 import { usePublicProducts } from "../hooks/usePublicProducts";
+import { useProductPromotions } from "../hooks/useProductPromotions";
 import CartSection from '../components/user/CartSection';
 import PurchasedProductsSection from '../components/user/PurchasedProductsSection';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -21,6 +22,7 @@ export default function ClienteArea() {
   // Hook preferiti e prodotti pubblici
   const { wishlist, wishlistDispatch } = useCart();
   const { products } = usePublicProducts();
+  const { promoProductIds } = useProductPromotions();
 
 type UserProfile = {
   id?: string;
@@ -466,7 +468,7 @@ type UserProfile = {
           <div className="rounded-2xl bg-gradient-to-br from-white to-[#f8e8e3] shadow-lg p-6 flex flex-col gap-3">
             <div className="flex items-center gap-2 mb-2">
               <span className="font-semibold text-[#b43434] text-base">Preferiti</span>
-              <span className="ml-auto text-xs text-neutral-500 cursor-pointer hover:underline" onClick={() => setShowWishlistModal(true)}>Vedi tutto</span>
+              <span className="ml-auto text-xs text-neutral-500 cursor-pointer hover:underline" onClick={() => navigate('/preferiti')}>Vedi tutto</span>
             </div>
             {/* Lista prodotti preferiti */}
             {(() => {
@@ -476,20 +478,24 @@ type UserProfile = {
               }
               return (
                 <div className="flex gap-2 overflow-x-auto pb-2">
-                  {preferiti.slice(0, 3).map(p => (
-                    <div key={p.id} className="w-32 h-32 bg-neutral-100 rounded-lg flex flex-col items-center justify-center p-2 shadow">
-                      {p.image_url && <img src={p.image_url} alt={p.name} className="w-16 h-16 rounded object-cover mb-2" />}
-                      <div className="font-medium text-xs text-center truncate w-full">{p.name}</div>
-                      <div className="text-xs text-neutral-500">€{p.price?.toFixed(2)}</div>
-                      <button className="mt-1 text-xs text-pink-600 border border-pink-400 rounded px-2 py-1 hover:bg-pink-100 transition" onClick={() => wishlistDispatch({ type: 'REMOVE_WISHLIST', id: p.id })}>Rimuovi</button>
-                    </div>
-                  ))}
+                  {preferiti.slice(0, 3).map(p => {
+                    const isPromo = promoProductIds.has(p.id);
+                    return (
+                      <div key={p.id} className={`w-32 h-32 bg-neutral-100 rounded-lg flex flex-col items-center justify-center p-2 shadow ${isPromo ? 'promo-product' : ''}`}> 
+                        {p.images && p.images[0] && <img src={p.images[0]} alt={p.name} className="w-16 h-16 rounded object-cover mb-2" />}
+                        {isPromo && <div className="promo-badge">In promozione</div>}
+                        <div className="font-medium text-xs text-center truncate w-full">{p.name}</div>
+                        <div className="text-xs text-neutral-500">€{p.price?.toFixed(2)}</div>
+                        <button className="mt-1 text-xs text-pink-600 border border-pink-400 rounded px-2 py-1 hover:bg-pink-100 transition" onClick={() => wishlistDispatch({ type: 'REMOVE_WISHLIST', id: p.id })}>Rimuovi</button>
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })()}
           </div>
           {/* Modale preferiti completo */}
-          <WishlistModal open={showWishlistModal} onOpenChange={setShowWishlistModal} />
+          {/* Modale rimossa, ora si usa la pagina preferiti */}
           {/* Ordini recenti */}
           <RecentOrdersSection userId={user?.id} onViewAll={() => navigate('/user-orders')} />
         </div>
