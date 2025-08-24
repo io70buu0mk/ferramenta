@@ -51,8 +51,10 @@ export function PromotionForm({ open, onOpenChange, promotion, productId, hidePr
         end_date: new Date(promotion.end_date).toISOString().slice(0, 16),
         is_active: promotion.is_active
       });
-      // Se productId è passato, seleziona il prodotto
-      if (productId) {
+      // Se product_ids è presente, seleziona i prodotti associati
+      if (promotion.product_ids && Array.isArray(promotion.product_ids)) {
+        setSelectedProducts(promotion.product_ids);
+      } else if (productId) {
         setSelectedProducts([productId]);
       }
     } else {
@@ -65,7 +67,6 @@ export function PromotionForm({ open, onOpenChange, promotion, productId, hidePr
         end_date: '',
         is_active: true
       });
-      // Se productId è passato, seleziona il prodotto
       if (productId) {
         setSelectedProducts([productId]);
       } else {
@@ -90,7 +91,13 @@ export function PromotionForm({ open, onOpenChange, promotion, productId, hidePr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // Forza la selezione del prodotto se hideProductSelector è true e productId è passato
+    let productsToSave = selectedProducts;
+    if (hideProductSelector && productId && !selectedProducts.includes(productId)) {
+      productsToSave = [productId];
+    }
+
     if (!formData.name.trim()) {
       toast({
         title: "Errore",
@@ -136,7 +143,7 @@ export function PromotionForm({ open, onOpenChange, promotion, productId, hidePr
       return;
     }
 
-    if (selectedProducts.length === 0) {
+    if (productsToSave.length === 0) {
       toast({
         title: "Errore",
         description: "Seleziona almeno un prodotto per la promozione",
@@ -159,9 +166,9 @@ export function PromotionForm({ open, onOpenChange, promotion, productId, hidePr
       };
 
       if (promotion) {
-        await updatePromotion(promotion.id, promotionData, selectedProducts);
+        await updatePromotion(promotion.id, promotionData, productsToSave);
       } else {
-        await createPromotion(promotionData, selectedProducts);
+        await createPromotion(promotionData, productsToSave);
       }
 
       onOpenChange(false);

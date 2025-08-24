@@ -15,17 +15,12 @@ export function ProductPromotionsManager({ productId }) {
   const [productPromotions, setProductPromotions] = useState([]);
 
   useEffect(() => {
-    const fetchProductPromos = async () => {
-      const filtered = [];
-      for (const promo of promotions) {
-        const products = await getPromotionProducts(promo.id);
-        if (products.some((p: any) => p.product_id === productId)) {
-          filtered.push(promo);
-        }
-      }
+    if (promotions.length > 0 && productId) {
+      const filtered = promotions.filter(promo => Array.isArray(promo.product_ids) && promo.product_ids.includes(productId));
       setProductPromotions(filtered);
-    };
-    if (promotions.length > 0 && productId) fetchProductPromos();
+    } else {
+      setProductPromotions([]);
+    }
   }, [promotions, productId]);
 
   const handleEdit = (promotion) => {

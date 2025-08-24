@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Package, ArrowLeft } from 'lucide-react';
-import ProductForm from '@/components/admin/ProductForm';
+
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useToast } from '@/hooks/use-toast';
@@ -12,11 +12,15 @@ import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from 
 import { arrayMove, SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { useRef } from 'react';
 import { ProductPromotionsManager } from '@/components/admin/ProductPromotionsManager';
+import { PromotionsSummary } from '@/components/admin/PromotionsSummary';
+import { usePromotions } from '@/hooks/usePromotions';
 
 export default function AdminProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { products, updateProduct, deleteProduct } = useProducts({ all: true });
+  const { promotions, getPromotionProducts } = usePromotions();
+  const [productPromotions, setProductPromotions] = useState<any[]>([]);
   const { categories } = useCategories();
   const { toast } = useToast();
   const [product, setProduct] = useState<any | null>(null);
@@ -30,15 +34,21 @@ export default function AdminProductDetail() {
     const fetchProduct = async () => {
       setLoading(true);
       const found = products.find((p) => p.id === id);
-      console.log('[AdminProductDetail] id:', id);
-      console.log('[AdminProductDetail] products:', products);
-      console.log('[AdminProductDetail] found:', found);
       setProduct(found || null);
       setFormData(found ? { ...found } : null);
       setLoading(false);
     };
     fetchProduct();
   }, [id, products]);
+
+  // Sincronizza le promozioni effettive del prodotto
+  useEffect(() => {
+    if (!product) return setProductPromotions([]);
+    const filtered = promotions.filter(
+      (promo: any) => Array.isArray(promo.product_ids) && promo.product_ids.includes(product.id)
+    );
+    setProductPromotions(filtered);
+  }, [promotions, product]);
 
   if (loading) {
     return (
@@ -80,27 +90,11 @@ export default function AdminProductDetail() {
         </div>
       </div>
       <div className="max-w-6xl mx-auto px-6 py-12">
-        <ProductForm
-          product={{ ...product, user_id: product?.user_id || '' }}
-          onSave={async (data) => {
-            await updateProduct(product.id, data);
-            showToastFeedback('success', 'Prodotto aggiornato', 'Le modifiche sono state salvate.');
-          }}
-          onDelete={async () => {
-            if (product.status !== 'deleted') {
-              await updateProduct(product.id, { status: 'deleted' });
-              showToastFeedback('info', 'Prodotto eliminato', 'Il prodotto è stato spostato nella sezione Eliminati.');
-              navigate(`/admin/${product?.user_id || ''}/products`);
-            } else {
-              await deleteProduct(product.id);
-              showToastFeedback('error', 'Prodotto eliminato definitivamente', 'Il prodotto è stato rimosso dal database.');
-              navigate(`/admin/${product?.user_id || ''}/products`);
-            }
-          }}
-          categories={categories.map((cat: any) => cat.name)}
-          promotions={product.promotions || []}
-          onManagePromotions={() => {}}
-        />
+        {/* Box riassuntivo promozioni attive, sempre visibile */}
+        <div className="mb-8">
+          <PromotionsSummary productId={product.id} alwaysVisible promotions={productPromotions} />
+        </div>
+        
         <div className="mt-12" id="product-promotions-section">
           <ProductPromotionsManager productId={product.id} />
         </div>

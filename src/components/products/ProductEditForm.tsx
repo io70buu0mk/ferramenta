@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { CustomDropdown } from "@/components/ui/CustomDropdown";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Product, ProductStatus } from "./api";
+import { PromotionsSummary } from "@/components/admin/PromotionsSummary";
+import { ProductPromotionsManager } from "@/components/admin/ProductPromotionsManager";
 
 // Componente per la gestione immagini con modale upload
 function ProductImagesManager({ images, onChange }: { images: string[]; onChange: (imgs: string[]) => void }) {
@@ -401,6 +403,14 @@ export function ProductEditForm() {
         <h2 className="text-3xl font-extrabold text-yellow-700 flex-1 truncate tracking-tight">{product.name || 'Nuovo prodotto'}</h2>
         {badge(product.status || 'draft')}
       </div>
+      {/* Sezione promozioni riassuntiva */}
+      <div className="px-8 pt-6">
+        {product?.id && (
+          <>
+            <PromotionsSummary productId={product.id} promotions={[]} alwaysVisible />
+          </>
+        )}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 p-6 md:p-10">
         {/* Colonna immagini */}
         <div className="flex flex-col gap-6 items-center justify-center">
@@ -450,6 +460,16 @@ export function ProductEditForm() {
             />
           </div>
         </div>
+      </div>
+      {/* Sezione promozioni riassuntiva */}
+      <div className="px-8 pt-6">
+        {product?.id && (
+          <>
+            <div className="mt-8 mb-8">
+              <ProductPromotionsManager productId={product.id} />
+            </div>
+          </>
+        )}
       </div>
       {/* Azioni sticky bottom */}
       <div className="sticky bottom-0 z-20 bg-gradient-to-r from-yellow-100 via-pink-100 to-blue-100 border-t border-yellow-200 px-8 py-6 flex flex-wrap gap-3 justify-between items-center shadow-lg">

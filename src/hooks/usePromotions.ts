@@ -14,6 +14,7 @@ export type Promotion = {
   created_at: string;
   updated_at: string;
   created_by: string;
+  product_ids?: string[];
 };
 
 export type PromotionProduct = {
@@ -63,31 +64,18 @@ export function usePromotions() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Utente non autenticato');
 
-      // Create promotion
+      // Create promotion, aggiungendo product_ids come array
       const { data: promotion, error: promotionError } = await supabase
         .from('promotions')
         .insert([{
           ...promotionData,
-          created_by: user.id
+          created_by: user.id,
+          product_ids: productIds
         }])
         .select()
         .single();
 
       if (promotionError) throw promotionError;
-
-      // Create promotion-product relationships
-      if (productIds.length > 0) {
-        const promotionProducts = productIds.map(productId => ({
-          promotion_id: promotion.id,
-          product_id: productId
-        }));
-
-        const { error: relationError } = await supabase
-          .from('promotion_products')
-          .insert(promotionProducts);
-
-        if (relationError) throw relationError;
-      }
 
       setPromotions(prev => [promotion as Promotion, ...prev]);
       toast({
@@ -112,36 +100,14 @@ export function usePromotions() {
         .from('promotions')
         .update({
           ...updates,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          product_ids: productIds ?? []
         })
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-
-      // Update product relationships if provided
-      if (productIds !== undefined) {
-        // Delete existing relationships
-        await supabase
-          .from('promotion_products')
-          .delete()
-          .eq('promotion_id', id);
-
-        // Create new relationships
-        if (productIds.length > 0) {
-          const promotionProducts = productIds.map(productId => ({
-            promotion_id: id,
-            product_id: productId
-          }));
-
-          const { error: relationError } = await supabase
-            .from('promotion_products')
-            .insert(promotionProducts);
-
-          if (relationError) throw relationError;
-        }
-      }
 
       setPromotions(prev => prev.map(p => p.id === id ? data as Promotion : p));
       toast({
